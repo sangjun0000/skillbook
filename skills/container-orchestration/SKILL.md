@@ -171,9 +171,67 @@ Docker Compose 로컬 개발 환경과 프로덕션 K8s 배포 모두에 실무 
 | api | 250m/500m | 256Mi/512Mi | 2/20 |
 ```
 
+5. **Network Policy (namespace 간 트래픽 제어)**
+   ```yaml
+   # Calico / Cilium 등 CNI 플러그인이 필요; 미적용 시 모든 트래픽 허용 상태
+   apiVersion: networking.k8s.io/v1
+   kind: NetworkPolicy
+   metadata:
+     name: allow-api-from-frontend
+     namespace: backend
+   spec:
+     podSelector:
+       matchLabels: { app: api-server }
+     policyTypes: [Ingress, Egress]
+     ingress:
+       - from:
+           - namespaceSelector:
+               matchLabels: { kubernetes.io/metadata.name: frontend }
+             podSelector:
+               matchLabels: { app: web }
+         ports: [{ protocol: TCP, port: 3000 }]
+     egress:
+       - to:
+           - namespaceSelector:
+               matchLabels: { kubernetes.io/metadata.name: data }
+         ports: [{ protocol: TCP, port: 5432 }]
+   ```
+   - Calico는 GlobalNetworkPolicy로 클러스터 전체 정책, Cilium은 eBPF 기반으로 레이턴시 오버헤드 최소화
+
+6. **Pod Disruption Budget (PDB)**
+   ```yaml
+   apiVersion: policy/v1
+   kind: PodDisruptionBudget
+   metadata: { name: api-server-pdb }
+   spec:
+     # minAvailable 또는 maxUnavailable 중 하나만 설정
+     minAvailable: 2          # 최소 2개 Pod는 항상 Running 유지
+     # maxUnavailable: 1      # 대안: 동시에 최대 1개만 중단 허용
+     selector:
+       matchLabels: { app: api-server }
+   ```
+   - 노드 드레인·클러스터 업그레이드 시 강제로 minAvailable Pod 수를 보호. HPA maxReplicas보다 작게 설정
+
+7. **Kubernetes Operator 패턴 (CRD + Controller)**
+   ```yaml
+   # CRD: 사용자 정의 리소스 타입 선언
+   apiVersion: apiextensions.k8s.io/v1
+   kind: CustomResourceDefinition
+   metadata: { name: redisinstances.cache.example.com }
+   spec:
+     group: cache.example.com
+     versions: [{ name: v1, served: true, storage: true, schema: { openAPIV3Schema: { type: object } } }]
+     scope: Namespaced
+     names: { plural: redisinstances, singular: redisinstance, kind: RedisInstance }
+   ```
+   - Controller는 CR 이벤트를 감지해 Reconcile Loop(현재 상태 → 원하는 상태)를 실행. kubebuilder/controller-runtime으로 Go로 작성
+   - 실사용: Prometheus Operator, cert-manager, CloudNativePG 모두 이 패턴
+
 ## 안티패턴
 
 - **latest 태그 사용**: 배포 재현 불가, 롤백 어려움. 시맨틱 버전 또는 SHA 다이제스트 필수
 - **리소스 제한 미설정**: 단일 Pod가 노드 리소스 소진 → OOMKilled, 노드 불안정의 주범
 - **liveness에 외부 의존성**: DB 체크를 liveness에 넣으면 DB 장애 시 전체 Pod 재시작으로 장애 확산
 - **단일 replica**: `replicas: 1`은 Pod 재시작 시 다운타임. 프로덕션 최소 2개 유지
+- **Network Policy 미적용**: 기본값은 모든 Pod 간 통신 허용 → namespace 격리만으로 보안 불충분
+- **PDB 없는 노드 유지보수**: PDB 미설정 시 드레인이 모든 Pod를 즉시 종료해 순간 다운타임 발생

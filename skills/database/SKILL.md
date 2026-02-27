@@ -196,6 +196,63 @@ Prisma와 Drizzle ORM 환경에서의 실무 구현과 마이그레이션 관리
 (Prisma 또는 Drizzle 스키마)
 ```
 
+## Prisma N+1 방지 패턴
+
+```typescript
+// 나쁨: N+1 발생 (users N개 → 각각 posts 쿼리)
+const users = await prisma.user.findMany();
+for (const user of users) {
+  const posts = await prisma.post.findMany({ where: { authorId: user.id } });
+}
+
+// 좋음: include로 한 번에 JOIN
+const users = await prisma.user.findMany({
+  include: { posts: { select: { id: true, title: true } } },  // 필요한 필드만 select
+});
+
+// relationLoadStrategy: join (기본) vs query (별도 IN 쿼리, 대량 관계에 유리)
+const users = await prisma.user.findMany({
+  relationLoadStrategy: 'query',  // Prisma 5.10+, posts를 별도 IN 쿼리로 로드
+  include: { posts: true },
+});
+```
+
+## PostgreSQL JSONB 활용
+
+```sql
+-- GIN 인덱스로 JSONB 전체 키 검색 가속
+CREATE INDEX idx_meta_gin ON product USING GIN (metadata);
+
+-- jsonb_path_query: 중첩 배열 내부까지 필터링
+SELECT id, jsonb_path_query(metadata, '$.tags[*] ? (@ == "sale")') AS tag
+FROM product
+WHERE metadata @? '$.tags[*] ? (@ == "sale")';
+
+-- 특정 키 값 조건 쿼리 (인덱스 사용)
+SELECT * FROM product WHERE metadata @> '{"category": "electronics"}';
+
+-- JSONB 컬럼 특정 키에 부분 인덱스
+CREATE INDEX idx_meta_category ON product ((metadata->>'category'));
+```
+
+JSONB는 스키마 유연성이 필요한 설정값, 태그, 메타데이터에 적합. 핵심 비즈니스 필드는 정규 컬럼 사용.
+
+## 테이블 파티셔닝 전략
+
+| 방식 | 기준 | 적용 케이스 |
+|------|------|------------|
+| Range | 날짜/숫자 범위 | 로그, 주문 이력 (월별/연별 파티션) |
+| List | 특정 값 목록 | 지역별(country='KR'), 상태별 분리 |
+| Hash | 해시 함수 | 특정 기준 없는 균등 분산 (user_id % N) |
+
+적용 기준: 단일 테이블 행이 1억 건 초과하거나, 오래된 데이터를 파티션 단위로 DROP(빠른 삭제)해야 할 때.
+```sql
+CREATE TABLE event_log (id UUID, created_at TIMESTAMPTZ, payload JSONB)
+PARTITION BY RANGE (created_at);
+CREATE TABLE event_log_2025_q1 PARTITION OF event_log
+  FOR VALUES FROM ('2025-01-01') TO ('2025-04-01');
+```
+
 ## 안티패턴
 
 - **모든 컬럼에 인덱스**: 인덱스는 쓰기 성능을 저하시킨다. 실제 쿼리 패턴에 기반해서만 추가
@@ -203,3 +260,4 @@ Prisma와 Drizzle ORM 환경에서의 실무 구현과 마이그레이션 관리
 - **ENUM 타입 사용**: PostgreSQL ENUM은 값 추가 시 마이그레이션이 복잡함. VARCHAR + CHECK 또는 참조 테이블 사용
 - **다형성 외래 키**: `commentable_type` + `commentable_id` 패턴은 외래 키 제약을 걸 수 없음. 별도 조인 테이블로 해결
 - **트랜잭션 무시**: 여러 테이블을 동시에 변경할 때 트랜잭션 없이 실행하면 데이터 불일치 발생
+- **Prisma include 과다 중첩**: 3단계 이상 중첩 include는 쿼리 폭발 위험. select로 필드 제한 또는 별도 쿼리 분리

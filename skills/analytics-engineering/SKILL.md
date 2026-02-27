@@ -171,6 +171,62 @@ BigQuery, Snowflake, PostgreSQL 환경에서의 dbt 운영과 CI/CD 파이프라
 | cents_to_dollars | 센트→달러 변환 |
 ```
 
+8. **dbt Unit Tests (v1.8+)**
+   ```yaml
+   # models/staging/stripe/_stripe__models.yml
+   models:
+     - name: stg_stripe__payments
+       unit_tests:
+         - name: test_cents_to_dollars_conversion
+           description: "amount 필드가 센트→달러로 올바르게 변환되는지 검증"
+           model: stg_stripe__payments
+           given:
+             - input: ref('payments')   # 또는 source('stripe', 'payments')
+               rows:
+                 - { id: "pay_1", amount: 1000, status: "succeeded", _fivetran_deleted: false }
+                 - { id: "pay_2", amount: 250,  status: "failed",    _fivetran_deleted: false }
+           expect:
+             rows:
+               - { payment_id: "pay_1", amount_dollars: 10.00, payment_status: "succeeded" }
+               - { payment_id: "pay_2", amount_dollars: 2.50,  payment_status: "failed" }
+   ```
+   - `dbt test --select stg_stripe__payments` 실행 시 unit test도 함께 실행됨
+   - 실제 DW 데이터 없이 순수 SQL 변환 로직을 단위 검증. 리팩터링 안전망으로 활용
+
+9. **Slim CI: `state:modified+` 활용 (PR 빌드 최적화)**
+   ```bash
+   # 1단계: main 브랜치 아티팩트를 CI 캐시에서 복원
+   dbt ls --target prod > /dev/null  # 이전 manifest.json 생성
+   # artifacts/ 에 prod manifest.json 저장 필요 (dbt Cloud 또는 S3 업로드)
+
+   # 2단계: PR에서 변경된 모델 + 다운스트림만 실행
+   dbt build \
+     --select "state:modified+"  \
+     --defer \
+     --state ./prod-artifacts/  \
+     --target ci
+   # state:modified+ → 수정된 모델과 그에 의존하는 하위 모델 전부 포함
+   # --defer → 변경되지 않은 상위 모델은 prod 결과를 참조 (full run 대비 90%+ 시간 절감)
+   ```
+   - `prod-artifacts/manifest.json`을 S3/GCS에 저장하고 CI가 다운로드하는 패턴이 표준
+   - dbt Cloud의 Slim CI는 이 설정을 UI에서 클릭 한 번으로 지원
+
+10. **dbt_artifacts / Elementary를 활용한 데이터 품질 모니터링**
+    ```yaml
+    # packages.yml
+    packages:
+      - package: elementary-data/elementary
+        version: [">=0.14.0", "<1.0.0"]
+    ```
+    ```bash
+    dbt run --select elementary          # Elementary 메타 테이블 생성
+    edr report                           # HTML 품질 리포트 생성 (로컬 확인)
+    edr send-report --slack-token $TOKEN # Slack으로 일별 품질 리포트 발송
+    ```
+    - Elementary는 `dbt test` 결과를 시계열로 누적해 **이상치 탐지(Anomaly Detection)** 적용
+    - 모니터링 가능 지표: row count 급감, null 비율 급증, freshness 지연, 분포 이탈
+    - `dbt_artifacts` 패키지는 `manifest.json` / `run_results.json`을 DW 테이블로 파싱해 계보·성능 대시보드 구축에 활용
+
 ## 안티패턴
 
 - **ref() 없이 직접 참조**: `FROM raw.payments` 대신 `{{ source() }}` 사용. 직접 참조는 계보/환경 분리 파괴
@@ -178,3 +234,4 @@ BigQuery, Snowflake, PostgreSQL 환경에서의 dbt 운영과 CI/CD 파이프라
 - **테스트 없는 배포**: schema.yml 없이 prod 배포하면 품질 문제 사후 발견. PK unique+not_null 필수
 - **모든 모델 Incremental**: Incremental은 복잡성이 높음. 필요한 모델에만 선택 적용
 - **하드코딩 환경 설정**: `WHERE env = 'prod'` 대신 `{{ target.name }}`으로 동적 처리
+- **Slim CI 없이 전체 빌드**: PR마다 수백 개 모델 전체 실행은 CI 시간·비용 낭비. `state:modified+` + defer 필수

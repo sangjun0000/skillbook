@@ -170,9 +170,53 @@ CloudFlare, AWS CloudFront, Vercel Edge Network 환경에서 실무 경험을 �
 (인증서 관리 방식, TLS 버전, HSTS)
 ```
 
+5. **Edge Middleware (Vercel / Cloudflare Workers)**
+   ```typescript
+   // Vercel: middleware.ts — 모든 요청이 Edge에서 실행 (Node.js 런타임 아님)
+   import { NextResponse } from 'next/server';
+   import type { NextRequest } from 'next/server';
+
+   export function middleware(request: NextRequest) {
+     const country = request.geo?.country ?? 'US';
+     const response = NextResponse.next();
+     response.headers.set('x-user-country', country);
+     // 지역별 리다이렉트: /ko, /en 자동 분기
+     if (request.nextUrl.pathname === '/' && country === 'KR') {
+       return NextResponse.redirect(new URL('/ko', request.url));
+     }
+     return response;
+   }
+   export const config = { matcher: ['/((?!_next|api|favicon).*)'] };
+   ```
+   ```javascript
+   // Cloudflare Workers — fetch 핸들러 직접 구현
+   export default {
+     async fetch(request, env) {
+       const url = new URL(request.url);
+       if (url.pathname.startsWith('/api/')) {
+         return fetch(`https://origin.example.com${url.pathname}`, request);
+       }
+       return fetch(request); // CDN에서 정적 파일 서빙
+     },
+   };
+   ```
+
+6. **HTTP/3 QUIC 설정 및 성능 영향**
+   - QUIC(UDP 기반)는 Head-of-Line Blocking을 멀티플렉싱 스트림 단위로 해소. 패킷 손실 시 HTTP/2 대비 월등한 복원력
+   - Cloudflare: 대시보드 Speed → Optimization → HTTP/3 토글만으로 활성화
+   - Nginx: `listen 443 quic reuseport; add_header Alt-Svc 'h3=":443"; ma=86400';`
+   - 고지연/모바일 네트워크에서 TTFB 최대 30% 개선 측정 사례. 브라우저 캐시된 연결 재사용(0-RTT)도 지원
+
+7. **Core Web Vitals 최적화를 위한 CDN 설정**
+   - **LCP (Largest Contentful Paint)**: 히어로 이미지를 CDN 오리진에 두고 `Cache-Control: public, max-age=31536000, immutable` + `<link rel="preload">` 병행. `cf-cache-status: HIT` 로그로 캐시 확인
+   - **CLS (Cumulative Layout Shift)**: 폰트 파일에 `font-display: swap` + CDN `Access-Control-Allow-Origin` 헤더 설정. 이미지에 명시적 width/height 속성 필수
+   - **INP (Interaction to Next Paint)**: 서드파티 스크립트를 CDN 프록시로 우회해 레이턴시 절감. Cloudflare Zaraz로 서드파티 태그를 Edge에서 실행
+   - Vercel Analytics / Cloudflare Web Analytics로 실사용자 CWV 지속 모니터링
+
 ## 안티패턴
 
 - **와일드카드 Cache-Control**: 모든 응답에 동일 정책 시 API가 캐시되거나 정적 파일이 매번 재요청됨. 유형별 차등 필수
 - **DNS TTL 과도하게 낮게**: 모든 레코드 60초는 DNS 쿼리 급증 유발. 변경 빈도에 따라 적절히 설정
 - **HTTP 허용 방치**: HTTPS 리다이렉트 없이 HTTP 허용은 MITM 노출. HTTP 80은 301 리다이렉트만
 - **CDN purge 의존**: 배포마다 캐시 무효화는 비효율적. content hashing으로 자연 갱신
+- **Edge Middleware 남용**: DB 조회·무거운 연산을 Edge에서 실행하면 응답 지연. Edge는 경량 라우팅·헤더 조작에만 사용

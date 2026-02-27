@@ -172,6 +172,70 @@ Infrastructure as Code, 환경 분리, 모니터링 체계 구축에 정통합�
 | production | main | app.com | GitHub Secrets |
 ```
 
+## GitHub Actions Reusable Workflows
+
+```yaml
+# .github/workflows/_reusable-deploy.yml (재사용 워크플로우 정의)
+on:
+  workflow_call:
+    inputs:
+      environment: { type: string, required: true }
+      image-tag:   { type: string, required: true }
+    secrets:
+      DEPLOY_TOKEN: { required: true }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - run: echo "Deploying ${{ inputs.image-tag }} to ${{ inputs.environment }}"
+        env: { TOKEN: '${{ secrets.DEPLOY_TOKEN }}' }
+
+# .github/workflows/cd.yml (호출 측)
+jobs:
+  deploy-staging:
+    uses: ./.github/workflows/_reusable-deploy.yml
+    with: { environment: staging, image-tag: '${{ github.sha }}' }
+    secrets: { DEPLOY_TOKEN: '${{ secrets.STAGING_DEPLOY_TOKEN }}' }
+  deploy-prod:
+    needs: deploy-staging
+    uses: ./.github/workflows/_reusable-deploy.yml
+    with: { environment: production, image-tag: '${{ github.sha }}' }
+    secrets: inherit  # 부모 secrets 전체 상속
+```
+
+## Docker Buildx 다중 플랫폼 빌드
+
+```yaml
+- uses: docker/setup-buildx-action@v3
+- uses: docker/build-push-action@v5
+  with:
+    platforms: linux/amd64,linux/arm64   # M1 Mac + Intel 서버 동시 지원
+    push: true
+    tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+    cache-from: type=gha
+    cache-to: type=gha,mode=max
+```
+
+ARM64 지원으로 AWS Graviton(~20% 저렴) 또는 Apple Silicon 개발 환경과 호환. QEMU 에뮬레이션 사용으로 빌드 시간 증가 유의.
+
+## OIDC 기반 클라우드 인증 (시크릿 없는 배포)
+
+```yaml
+# AWS: 장기 액세스 키 없이 IAM Role 임시 자격증명 발급
+permissions:
+  id-token: write   # OIDC 토큰 발급 권한 필수
+  contents: read
+steps:
+  - uses: aws-actions/configure-aws-credentials@v4
+    with:
+      role-to-assume: arn:aws:iam::123456789:role/github-actions-deploy
+      aws-region: ap-northeast-2
+  - run: aws s3 sync ./dist s3://my-bucket  # 임시 자격증명으로 실행
+```
+
+AWS IAM Role의 Trust Policy에 GitHub OIDC Provider를 신뢰 대상으로 등록. GCP는 `google-github-actions/auth`로 동일 패턴 적용.
+
 ## 안티패턴
 
 - **시크릿 하드코딩**: 코드에 API 키나 비밀번호를 직접 작성하면 유출 위험 극대화. GitHub Secrets 또는 Vault 사용 필수
@@ -179,3 +243,4 @@ Infrastructure as Code, 환경 분리, 모니터링 체계 구축에 정통합�
 - **단일 거대 워크플로우**: 모든 작업을 하나의 job에 넣으면 병렬화 불가하고 디버깅 곤란. 관심사별 job 분리 후 `needs`로 의존성 관리
 - **테스트 없이 배포**: 테스트를 건너뛰거나 실패해도 배포되는 파이프라인은 장애의 직행 경로. 테스트 통과를 배포 필수 조건으로 설정
 - **환경별 분기 없는 설정**: 모든 환경에 동일 설정을 사용하면 staging에서 production DB를 조작하는 사고 발생. 환경별 변수와 시크릿을 명확히 분리
+- **장기 액세스 키 CI 사용**: AWS_ACCESS_KEY_ID를 Secrets에 저장하면 키 로테이션 부담. OIDC로 전환하면 자격증명이 코드에 존재하지 않음

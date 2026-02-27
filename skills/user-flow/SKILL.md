@@ -170,6 +170,85 @@ Task Flow와 User Flow를 구분하며, 사이트맵 구조화, 네비게이션 
 
 사용자 플로우 설계: 사이트맵(Mermaid), 핵심 Task Flow(Mermaid flowchart), 네비게이션 구조 테이블(유형|위치|항목|구현), 오류 복구 경로(Mermaid)
 
+## Next.js App Router IA 패턴
+
+### Route Group으로 IA 분리
+
+```
+app/
+├── (marketing)/          # 비인증 영역
+│   ├── page.tsx          # /
+│   ├── pricing/page.tsx  # /pricing
+│   └── blog/[slug]/page.tsx
+├── (app)/                # 인증 필요 영역
+│   ├── layout.tsx        # 사이드바 + 글로벌 네비게이션
+│   ├── dashboard/page.tsx
+│   └── projects/
+│       ├── page.tsx              # /projects (목록)
+│       └── [id]/
+│           ├── page.tsx          # /projects/abc (상세)
+│           └── settings/page.tsx # /projects/abc/settings
+└── (auth)/
+    ├── login/page.tsx
+    └── register/page.tsx
+```
+
+**핵심**: Route depth 3단계 이내 유지. `/projects/[id]/settings`가 한계선 — 이 이상은 Parallel Routes나 Intercepting Routes로 평탄화한다.
+
+### Intercepting Routes로 깊이 평탄화
+
+```
+app/(app)/projects/
+├── [id]/page.tsx                    # 풀 페이지 상세
+├── @modal/(.)projects/[id]/page.tsx # 목록에서 클릭 시 모달로 열기
+```
+
+URL 깊이를 늘리지 않고 목록→상세 전환을 모달로 처리. Instagram 스타일 UX.
+
+## 폼 데이터 복구 패턴
+
+### 세션 만료/에러 시 입력 보존
+
+```tsx
+// useFormPersist.ts — 입력 중인 폼 데이터를 sessionStorage에 자동 저장
+function useFormPersist<T>(key: string, defaultValues: T) {
+  const [values, setValues] = useState<T>(() => {
+    if (typeof window === "undefined") return defaultValues;
+    const saved = sessionStorage.getItem(`form:${key}`);
+    return saved ? JSON.parse(saved) : defaultValues;
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem(`form:${key}`, JSON.stringify(values));
+  }, [key, values]);
+
+  const clear = () => sessionStorage.removeItem(`form:${key}`);
+
+  return { values, setValues, clear };
+}
+```
+
+```tsx
+// 사용 예시 — 결제 폼에서 401 발생 시에도 데이터 유지
+function CheckoutForm() {
+  const { values, setValues, clear } = useFormPersist("checkout", {
+    name: "", email: "", plan: "pro",
+  });
+
+  async function handleSubmit() {
+    const res = await fetch("/api/checkout", { method: "POST", body: JSON.stringify(values) });
+    if (res.status === 401) {
+      // 로그인 페이지로 이동 — sessionStorage에 폼 데이터 보존됨
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (res.ok) clear(); // 성공 시에만 삭제
+  }
+}
+```
+
+**원칙**: 서버 에러(4xx/5xx)로 폼이 리셋되면 사용자는 이탈한다. `sessionStorage`로 입력을 보존하고, 성공 시에만 `clear()`한다.
+
 ## 안티패턴
 
 - **깊은 계층**: 5단계 이상 URL 깊이는 위치 파악이 어렵다. 최대 3단계로 평탄화
@@ -177,3 +256,4 @@ Task Flow와 User Flow를 구분하며, 사이트맵 구조화, 네비게이션 
 - **숨겨진 핵심 기능**: 3단계 이상 메뉴 깊이에 숨긴 핵심 기능은 발견되지 못한다
 - **일관성 없는 네비게이션**: 페이지마다 메뉴 구성이 달라지면 학습 비용 급증
 - **뒤로 가기 파괴**: SPA에서 히스토리를 가로채면 사용자 혼란. 의미 있는 단계를 히스토리에 기록
+- **폼 데이터 손실**: 에러/세션 만료 시 사용자 입력을 날리면 이탈률 급증. 반드시 `sessionStorage`로 보존

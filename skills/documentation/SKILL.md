@@ -140,6 +140,97 @@ TypeDoc, Docusaurus 등 문서 자동화 도구로 지속 가능한 문서 체�
    "docs:watch": "typedoc --watch"
    ```
 
+7. **OpenAPI v3.1 최신 명세 — JSON Schema 2020-12 기반**
+   ```yaml
+   openapi: 3.1.0
+   info:
+     title: User API
+     version: 2.0.0
+   paths:
+     /api/v2/users:
+       post:
+         requestBody:
+           content:
+             application/json:
+               schema:
+                 # v3.1: $schema 선언으로 JSON Schema 2020-12 완전 호환
+                 $schema: "https://json-schema.org/draft/2020-12/schema"
+                 oneOf:
+                   - $ref: "#/components/schemas/EmailUser"
+                   - $ref: "#/components/schemas/SocialUser"
+                 discriminator:
+                   propertyName: authType
+                   mapping:
+                     email: "#/components/schemas/EmailUser"
+                     social: "#/components/schemas/SocialUser"
+   components:
+     schemas:
+       EmailUser:
+         type: object
+         properties:
+           authType: { const: "email" }
+           email: { type: string, format: email }
+           password: { type: string, minLength: 8 }
+         required: [authType, email, password]
+       SocialUser:
+         type: object
+         properties:
+           authType: { const: "social" }
+           provider: { enum: [google, github, apple] }
+           token: { type: string }
+         required: [authType, provider, token]
+   ```
+
+8. **TypeDoc → GitHub Pages 자동 배포 CI/CD**
+   ```yaml
+   # .github/workflows/docs.yml
+   name: Deploy API Docs
+   on:
+     push:
+       branches: [main]
+       paths: ["src/**/*.ts", "typedoc.json"]
+   jobs:
+     deploy:
+       runs-on: ubuntu-latest
+       permissions:
+         contents: write
+       steps:
+         - uses: actions/checkout@v4
+         - uses: actions/setup-node@v4
+           with: { node-version: 20, cache: npm }
+         - run: npm ci
+         - run: npm run docs:generate   # typedoc --out docs/api
+         - uses: peaceiris/actions-gh-pages@v4
+           with:
+             github_token: ${{ secrets.GITHUB_TOKEN }}
+             publish_dir: ./docs/api
+             destination_dir: api  # /api/v2 경로로 분리 배포 시 destination_dir: api/v2
+   ```
+
+9. **API 문서 버전 관리 전략**
+   ```
+   docs/
+   ├── api/
+   │   ├── v1/          # 유지보수 모드 — deprecated 마킹
+   │   │   └── openapi.yaml   # info.x-deprecated: true 커스텀 필드
+   │   └── v2/          # 현재 버전
+   │       └── openapi.yaml
+   ```
+   ```yaml
+   # v1 명세에 deprecated 마킹
+   info:
+     title: User API
+     version: 1.5.0
+     x-deprecated: true
+     x-deprecated-message: "v1은 2026-06-01 이후 지원 종료. v2로 마이그레이션 하세요."
+   # 엔드포인트 수준 deprecated
+   paths:
+     /api/v1/users:
+       post:
+         deprecated: true
+         description: "Deprecated: `/api/v2/users` 를 사용하세요."
+   ```
+
 ### 검증 단계
 
 1. [ ] README에 프로젝트 설명, 설치, 사용법, 라이선스가 모두 포함되었는가

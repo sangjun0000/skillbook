@@ -142,6 +142,77 @@ CSS Variables + Tailwind Token 통합, 다크 모드 구현, 시맨틱 버전 �
    };
    ```
 
+6. **Tailwind v4 CSS 변수 바인딩 — @theme 패턴**
+   ```css
+   /* Tailwind v4: @theme 블록으로 CSS 변수를 유틸리티 클래스에 직접 바인딩 */
+   @import "tailwindcss";
+
+   @theme {
+     /* --color-* 토큰은 자동으로 bg-*, text-*, border-* 클래스로 노출 */
+     --color-surface: #f9fafb;
+     --color-surface-elevated: #ffffff;
+     --color-accent: #2563eb;
+     --color-text-primary: #111827;
+     /* 기존 tailwind.config.ts extend 없이 곧바로 bg-surface 등 사용 가능 */
+   }
+   /* 다크 모드: @theme 내 변수를 dark variant에서 재정의 */
+   @media (prefers-color-scheme: dark) {
+     @theme {
+       --color-surface: #111827;
+       --color-accent: #3b82f6;
+     }
+   }
+   ```
+
+7. **Slot 기반 컴포넌트 패턴 (asChild)**
+   ```tsx
+   // Radix Primitives / Headless UI asChild 패턴
+   // 컴포넌트 DOM 요소를 소비자가 제공하는 요소로 대체
+   import { Slot } from '@radix-ui/react-slot';
+
+   interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+     asChild?: boolean;
+     variant?: 'primary' | 'ghost';
+   }
+   export function Button({ asChild, variant = 'primary', className, ...props }: ButtonProps) {
+     const Comp = asChild ? Slot : 'button';
+     return <Comp className={cn(buttonVariants({ variant }), className)} {...props} />;
+   }
+   // 사용: <Button asChild><Link href="/dashboard">대시보드</Link></Button>
+   // → <a> 태그가 렌더링되지만 Button 스타일 적용. 중첩 인터랙티브 요소 문제 해소
+   ```
+
+8. **다크 모드 동기화 전략 (3-way sync)**
+   ```tsx
+   // localStorage + system preference + class 토글의 충돌 없는 동기화
+   export function useDarkMode() {
+     const [isDark, setIsDark] = useState(() => {
+       if (typeof window === 'undefined') return false;
+       const stored = localStorage.getItem('theme');
+       if (stored) return stored === 'dark';
+       return window.matchMedia('(prefers-color-scheme: dark)').matches;
+     });
+
+     useEffect(() => {
+       // class 토글은 <html> 요소에서 관리 (Tailwind dark: 변형과 호환)
+       document.documentElement.classList.toggle('dark', isDark);
+       localStorage.setItem('theme', isDark ? 'dark' : 'light');
+     }, [isDark]);
+
+     useEffect(() => {
+       // 시스템 설정 변경 실시간 감지 (단, 사용자가 명시적 선택 시 무시)
+       const mq = window.matchMedia('(prefers-color-scheme: dark)');
+       const handler = (e: MediaQueryListEvent) => {
+         if (!localStorage.getItem('theme')) setIsDark(e.matches);
+       };
+       mq.addEventListener('change', handler);
+       return () => mq.removeEventListener('change', handler);
+     }, []);
+
+     return { isDark, toggle: () => setIsDark(d => !d) };
+   }
+   ```
+
 ### 검증 단계
 
 1. [ ] 모든 색상/폰트/간격이 Design Token으로 정의되었는가 (하드코딩 없음)

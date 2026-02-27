@@ -172,9 +172,41 @@ Event Sourcing과 CQRS를 활용한 도메인 모델링, 최종 일관성 보장
 ### 일관성 전략 (강한/최종)
 ```
 
+## 메시지 브로커 선택 기준
+
+| 기준 | Kafka | RabbitMQ | AWS EventBridge |
+|------|-------|----------|-----------------|
+| 처리량 | 수백만 msg/s, 고처리량 | 수만 msg/s, 중간 | 서버리스, 자동 확장 |
+| 순서 보장 | 파티션 단위 보장 | 큐 단위 보장 | 미보장 (버스 특성) |
+| 라우팅 | 토픽/파티션 기반 | Exchange/Binding 유연 | 패턴 필터링 강력 |
+| 재처리 | 오프셋으로 과거 재생 가능 | 소비 후 삭제 | 24시간 아카이빙 |
+| 적합 케이스 | 로그 수집, 이벤트 소싱, 스트림 | RPC, 작업 큐, 복잡한 라우팅 | AWS 서비스 간 통합, SaaS |
+
+## Event Schema 버전 관리
+
+```protobuf
+// Protobuf: 필드 번호는 영구 불변. 새 필드만 추가 허용
+message OrderCreated {
+  string order_id = 1;     // 절대 삭제/변경 금지
+  string user_id  = 2;     // 삭제하면 하위 호환성 파괴
+  int64  amount   = 3;
+  string coupon_code = 4;  // v2: 새 필드 추가만 허용 (optional)
+}
+```
+
+하위 호환성 규칙: 필드 추가만 허용, 필드 삭제/타입 변경/번호 재사용 금지.
+Avro 사용 시 Schema Registry(Confluent)로 중앙 관리, Consumer는 구 스키마로도 역직렬화 가능.
+
+## Event Replay / Time Travel 패턴
+
+Kafka의 오프셋 리셋으로 과거 이벤트 재처리: `--to-earliest` 옵션으로 Consumer Group을 오프셋 0으로 리셋하면 전체 이벤트 재생.
+Event Store(EventStoreDB) 사용 시 특정 시점(timestamp)의 Aggregate 상태를 재구성하는 Time Travel 가능.
+스냅샷 패턴 병행: 이벤트 100개마다 Aggregate 스냅샷 저장 → 재생 시 가장 가까운 스냅샷에서 시작하여 성능 확보.
+
 ## 안티패턴
 
 - **이벤트에 과도한 데이터**: 전체 엔티티 대신 변경된 사실만 최소한으로 포함
 - **이벤트를 커맨드처럼 사용**: `SendEmailEvent`가 아닌 `OrderCreated`처럼 과거형 사실로 기록
 - **Outbox 없이 직접 발행**: DB 저장과 메시지 발행이 별도 트랜잭션이면 불일치 발생
 - **Dead Letter Queue 무시**: 실패 메시지 무한 재시도 대신 DLQ 격리 후 모니터링
+- **Schema 필드 삭제**: 하위 호환성 파괴로 구버전 Consumer가 역직렬화 실패. 필드는 deprecated 마킹 후 유지

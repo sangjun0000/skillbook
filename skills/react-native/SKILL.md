@@ -157,9 +157,64 @@ NativeWind 스타일링, EAS Build/Submit 파이프라인 운영에 정통합니
 (주요 화면의 TSX 코드)
 ```
 
+5. **React Native 0.76+ Bridgeless Architecture (New Architecture)**
+   ```typescript
+   // app.json — New Architecture 활성화 (0.76부터 기본값)
+   // { "expo": { "newArchEnabled": true } }
+
+   // JSI (JavaScript Interface): JS↔Native 호출이 Bridge JSON 직렬화 없이 C++ 레이어 직접 호출
+   // → 동기 호출 가능, 레이턴시 대폭 감소
+
+   // Fabric (새 렌더러): React 18 Concurrent Features 지원, UI 스레드에서 레이아웃 동기 측정
+   // Turbo Modules: 필요한 네이티브 모듈만 Lazy 로딩 (기존 NativeModules는 앱 시작 시 전부 초기화)
+
+   // TurboModule 인터페이스 정의 예 (TypeScript)
+   import type { TurboModule } from 'react-native';
+   import { TurboModuleRegistry } from 'react-native';
+   export interface Spec extends TurboModule {
+     multiply(a: number, b: number): number;
+   }
+   export default TurboModuleRegistry.getEnforcing<Spec>('MyCalculator');
+   ```
+   - 0.76 이전 코드베이스: `react-native upgrade` 후 서드파티 라이브러리의 New Architecture 지원 여부 먼저 확인 (`reactnative.directory`)
+
+6. **Metro Bundler 최적화**
+   ```javascript
+   // metro.config.js
+   const { getDefaultConfig } = require('expo/metro-config');
+   const config = getDefaultConfig(__dirname);
+
+   config.resolver.blockList = [
+     /node_modules\/.*\/node_modules\/react-native\/.*/,  // 중복 RN 패키지 차단
+   ];
+   // 심볼릭 링크 모노레포 지원
+   config.resolver.unstable_enableSymlinks = true;
+   config.resolver.unstable_enablePackageExports = true;
+
+   // SVG 트랜스포머 추가 예
+   config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+   config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
+   config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
+
+   module.exports = config;
+   ```
+   - `METRO_MAX_WORKERS=4` 환경 변수로 병렬 워커 수 제한 → CI 메모리 초과 방지
+   - `--reset-cache` 플래그는 캐시 오염 의심 시에만 사용 (느림)
+
+7. **Hermes Engine 활성화 및 성능 이점**
+   ```json
+   // app.json (Expo Managed — 0.70+ 기본 활성화)
+   { "expo": { "jsEngine": "hermes" } }
+   ```
+   - Hermes는 앱 시작 시 JS를 **사전 컴파일(Bytecode)** 로 변환 → TTI(Time to Interactive) 최대 40% 단축
+   - 메모리 사용량 감소: JIT 없이 인터프리터 실행, GC가 더 예측 가능
+   - Hermes 디버깅: Chrome DevTools 대신 `npx react-native start --port 8081` + Hermes Inspector 사용
+   - 비활성화가 필요한 경우: 특정 JS 문법 미지원 이슈 시 `"jsEngine": "jsc"` 으로 폴백 (점점 드문 케이스)
+
 ## 안티패턴
 
 - **성급한 Expo Eject**: 네이티브 모듈이 필요하다는 이유만으로 Bare 전환. `expo-dev-client` + Config Plugin으로 대부분 해결
 - **인라인 스타일 남용**: `style={{ margin: 10 }}`은 매 렌더링마다 새 객체 생성. `StyleSheet.create` 또는 NativeWind 사용
 - **네비게이션에 대량 데이터 전달**: 화면 간 전체 객체 대신 ID만 전달 후 해당 화면에서 조회
 - **플랫폼 차이 무시**: iOS/Android의 뒤로가기, 제스처, 상태바 동작 차이를 고려하지 않은 설계
+- **New Architecture 미확인 서드파티**: Bridgeless 활성화 후 구버전 Bridge 전용 라이브러리 사용 시 크래시. `reactnative.directory`에서 호환성 사전 검증 필수

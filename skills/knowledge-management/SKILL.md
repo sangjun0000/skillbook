@@ -139,6 +139,76 @@ ADR을 통한 의사결정 추적, Runbook 기반 장애 대응 체계, 비난 �
    - [ ] 시스템 오너십 보유, 온콜 독립 참여
    ```
 
+6. **Runbook 자동화 — GitHub Actions Self-Healing**
+   ```yaml
+   # .github/workflows/self-heal-db-connection.yml
+   # Runbook: "DB 커넥션 풀 고갈" 대응 절차를 자동화
+   name: Self-Heal DB Connection Pool
+   on:
+     workflow_dispatch:
+       inputs:
+         environment: { type: choice, options: [staging, production] }
+   jobs:
+     heal:
+       runs-on: ubuntu-latest
+       environment: ${{ inputs.environment }}
+       steps:
+         - name: 현재 커넥션 수 확인
+           run: |
+             COUNT=$(psql $DATABASE_URL -t -c "SELECT count(*) FROM pg_stat_activity WHERE state='idle in transaction';")
+             echo "Idle-in-transaction connections: $COUNT"
+             echo "CONNECTION_COUNT=$COUNT" >> $GITHUB_ENV
+         - name: 임계치 초과 시 강제 종료
+           if: env.CONNECTION_COUNT > 50
+           run: |
+             psql $DATABASE_URL -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+               WHERE state='idle in transaction' AND query_start < NOW() - INTERVAL '5 minutes';"
+         - name: 결과 Slack 알림
+           uses: slackapi/slack-github-action@v1
+           with:
+             payload: '{"text":"DB 커넥션 자동 정리 완료: ${{ env.CONNECTION_COUNT }}개 → 0개"}'
+           env:
+             SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+   ```
+
+7. **Knowledge Base 검색 최적화 — 태그 시스템 & 메타데이터 구조**
+   ```markdown
+   ---
+   # 모든 지식 문서 frontmatter 표준 메타데이터
+   title: "API 응답 지연 대응 Runbook"
+   type: runbook                      # adr | runbook | postmortem | guide | faq
+   tags: [api, latency, database, p2] # 기능-영역-심각도 3축 태깅
+   severity: P2
+   services: [api-gateway, postgres]
+   owner: "@platform-team"
+   last-reviewed: 2026-01-15
+   status: active                     # active | deprecated | draft
+   related:
+     - docs/adr/012-connection-pool.md
+     - docs/postmortems/2025-11-db-timeout.md
+   ---
+   ```
+   태그 체계 — 3축 원칙:
+   - **기능 태그**: `api`, `auth`, `database`, `ci-cd`, `monitoring`
+   - **영역 태그**: `backend`, `frontend`, `infra`, `security`
+   - **심각도/유형 태그**: `p0`, `p1`, `p2`, `breaking-change`, `deprecated`
+
+8. **코드-문서 동기화 — ADR/Runbook 코드 주석 링크 패턴**
+   ```typescript
+   // ADR 링크 패턴: 의사결정 근거를 코드에 직접 연결
+   // @adr docs/adr/008-jwt-refresh-strategy.md
+   // @context 리프레시 토큰 로테이션 정책은 ADR-008 참고
+   export async function rotateRefreshToken(token: string): Promise<TokenPair> { /* ... */ }
+
+   // Runbook 링크 패턴: 운영 절차를 해당 코드 옆에 명시
+   // @runbook docs/runbooks/connection-pool-exhaustion.md
+   // @oncall DB 커넥션 풀 고갈 시 위 Runbook 실행
+   const pool = new Pool({ max: 20, idleTimeoutMillis: 30_000 });
+
+   // ESLint 커스텀 룰 또는 pre-commit hook으로 @adr 태그 유효성 검사:
+   // 참조된 파일이 실제 존재하는지 확인하여 끊어진 링크 방지
+   ```
+
 ### 검증 단계
 
 1. [ ] ADR에 맥락-선택지-결정-결과 구조가 모두 포함되었는가

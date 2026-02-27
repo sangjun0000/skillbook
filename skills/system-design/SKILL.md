@@ -171,6 +171,48 @@ allowed-tools:
 ### 확장 전략 (현재 → 10x → 100x)
 ```
 
+## Edge Computing 패턴
+
+Vercel Edge Functions / Cloudflare Workers는 사용자에 가장 가까운 POP(Point of Presence)에서 실행.
+적합한 케이스: A/B 테스트 라우팅, 인증 토큰 검증, 지역별 리다이렉트, 응답 헤더 조작.
+주의: 실행 시간 50ms 이하 제약, Node.js 전체 API 미지원(Web API subset). 무거운 DB 쿼리는 부적합.
+
+```typescript
+// Cloudflare Workers: 엣지에서 A/B 테스트 라우팅
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const bucket = Math.random() < 0.5 ? 'a' : 'b';
+    const url = new URL(request.url);
+    url.pathname = `/experiment-${bucket}${url.pathname}`;
+    return fetch(url.toString(), request);
+  }
+};
+```
+
+## 캐시 저장소 선택
+
+| 기준 | Redis | Memcached | DynamoDB DAX |
+|------|-------|-----------|--------------|
+| 데이터 구조 | String, Hash, List, Set, Sorted Set | String만 | DynamoDB 호환 |
+| 클러스터링 | Redis Cluster (자체) | 수평 확장 용이 | 완전관리형 |
+| 영속성 | RDB/AOF 스냅샷 지원 | 미지원 (휘발) | DynamoDB 기반 |
+| 적합 케이스 | 세션, 리더보드, Pub/Sub, 분산 락 | 단순 캐시, 높은 읽기 처리량 | DynamoDB 읽기 캐싱 전용 |
+
+## SLO/SLA 구체 예시
+
+```
+SLO 목표:
+  - P50 Latency < 50ms   (중간값 사용자 경험)
+  - P99 Latency < 200ms  (99번째 백분위 상한선)
+  - Availability: 99.9% uptime = 월 43.8분 허용 다운타임
+
+Error Budget 계산:
+  - 월 가용 시간: 43,200분
+  - 99.9% SLO → 허용 장애: 43.2분/월
+  - 현재 사용: 20분 → 잔여 Error Budget: 23.2분 (53.7%)
+  - Budget 소진 시 → 신규 기능 배포 중단, 안정성 작업 우선
+```
+
 ## 안티패턴
 
 - **조기 최적화**: 트래픽 없는 단계에서 샤딩/멀티리전을 설계하면 복잡성만 증가
@@ -178,3 +220,4 @@ allowed-tools:
 - **모든 데이터에 강한 일관성**: 모든 읽기를 Primary에서 수행하면 확장 불가
 - **동기 처리 고집**: 이메일, 이미지 리사이즈 같은 비실시간 작업을 동기 처리하면 응답 지연
 - **모니터링 없는 운영**: 메트릭/알람 없이 운영하면 장애를 사용자 신고로 인지
+- **SLO 없이 운영**: 목표 없이 장애 대응하면 우선순위 판단 불가. Error Budget으로 배포 속도와 안정성 균형 유지

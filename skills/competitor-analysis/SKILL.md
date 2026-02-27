@@ -60,7 +60,11 @@ AI/SaaS 시장(Next.js, Python, FastAPI, LLM APIs, Vercel 기반)의
    - 핵심 인력(CEO, CTO, CPO)의 배경과 비전
 2. **제품 분석**
    - 핵심 기능 목록 및 기능 매트릭스 작성
-   - 기술 스택 분석(BuiltWith, Wappalyzer, 채용 공고 분석)
+   - **기술 스택 분석 도구**:
+     - **BuiltWith** (builtwith.com): 프론트엔드 프레임워크, 분석 도구, CDN, 결제 솔루션 식별
+     - **Wappalyzer** (브라우저 확장): 실시간 기술 스택 확인 (JS 라이브러리, CMS, 서버 등)
+     - **GitHub stars tracking**: star-history.com에서 오픈소스 경쟁사 성장 추이 비교
+     - **채용 공고 분석**: 경쟁사 JD에서 기술 스택·팀 구조·미래 로드맵 역추론
    - UI/UX 패턴, 온보딩 플로우, 핵심 워크플로우 분석
    - 가격 정책(Pricing Model, 가격대, 무료 티어 범위)
 3. **GTM(Go-To-Market) 전략 분석**
@@ -84,6 +88,23 @@ AI/SaaS 시장(Next.js, Python, FastAPI, LLM APIs, Vercel 기반)의
 3. **Blue Ocean Strategy 관점**
    - Strategy Canvas 작성: 주요 경쟁 요소별 투자 수준 비교
    - ERRC Grid: 제거(Eliminate), 감소(Reduce), 증가(Raise), 창조(Create) 도출
+
+### 3.5단계: AI 시대 경쟁 구도 분석 (AI 제품 전용)
+
+AI 기반 제품의 경우, 기존 분석에 다음 프레임워크를 추가한다:
+
+1. **AI 조달 전략 분류**
+   | 유형 | 설명 | 대표 사례 | 경쟁 시사점 |
+   |---|---|---|---|
+   | 상용 API 의존 | OpenAI/Anthropic API를 그대로 사용 | 대부분의 AI 스타트업 | 모델 업그레이드 무임승차, 비용·레이트리밋 리스크 |
+   | 오픈소스 파인튜닝 | Llama/Mistral 기반 자체 학습 | 특화 분야 SaaS | 데이터 해자 구축 가능, 초기 품질 열위 |
+   | 자체 모델 개발 | 독자 LLM 훈련 | Google, Anthropic, xAI | 극소수; 막대한 자본 필요 |
+
+2. **경쟁사 AI 전략 분석 지표**
+   - **모델 선택**: 어떤 모델을 쓰는가 (공개 여부, JD·블로그 단서)
+   - **비용 구조 추정**: 토큰 기반 과금인지, 사용량 기반 분리 여부
+   - **Latency 벤치마크**: AI 응답 속도 비교 (직접 사용 테스트 또는 커뮤니티 데이터)
+   - **파인튜닝 여부**: 도메인 특화 성능이 일반 모델 대비 우수한지 실제 테스트
 
 ### 4단계: 전략적 시사점 도출
 

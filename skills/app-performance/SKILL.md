@@ -134,6 +134,42 @@ Flipper, React DevTools, Hermes 프로파일러를 활용한 병목 진단 경�
    import { debounce } from 'lodash-es';
    ```
 
+6. **Cold Start 측정 및 네이티브 성능 API**
+   ```typescript
+   // React Native 0.76+ Native Performance API
+   // JS 브릿지 없이 네이티브 타이밍을 직접 측정
+   import { PerformanceObserver, performance } from 'react-native/Libraries/Performance/ReactNativeStartupTiming';
+
+   // 앱 시작 단계 마커 기록
+   performance.mark('bundle-eval-start');
+   // ... 번들 평가 완료 후
+   performance.mark('bundle-eval-end');
+   performance.measure('bundle-eval', 'bundle-eval-start', 'bundle-eval-end');
+
+   // PerformanceObserver로 비동기 수집
+   const observer = new PerformanceObserver((list) => {
+     for (const entry of list.getEntries()) {
+       console.log(`${entry.name}: ${entry.duration.toFixed(2)}ms`);
+     }
+   });
+   observer.observe({ entryTypes: ['measure', 'react-native-startup'] });
+   ```
+
+   **플랫폼별 Cold Start 측정 도구:**
+   - **Android**: Android Studio Profiler → "Startup trace" 캡처
+     - App Startup 섹션에서 `Application.onCreate` ~ 첫 프레임까지 세분화 분석
+     - `adb shell am start-activity --start-profiler` 로 CLI 측정
+   - **iOS**: Xcode Instruments → Time Profiler 템플릿 사용
+     - `main()` 진입부터 `applicationDidBecomeActive` 완료까지 범위 선택
+     - Heaviest Stack Trace에서 초기화 병목 함수 식별
+
+   **Memory 누수 탐지 실전 도구:**
+   - **Flipper Memory 플러그인**: Heap Visualizer에서 시간 경과에 따른 객체 증가 추적
+     - Leak Suspect: 참조가 끊기지 않는 컴포넌트 instance 직접 확인
+     - 스냅샷 비교: 특정 액션 전후 스냅샷 diff로 증가한 객체 유형 식별
+   - **Xcode Instruments Allocations**: "Mark Generation" 버튼으로 구간별 메모리 증가분 격리
+     - Generation A → 화면 진입 → Generation B 후 내비게이션 복귀 → `[B] - [A]` 잔존 객체 = 누수 후보
+
 ### 검증 단계
 
 1. [ ] Cold Start가 2초 이내인가 (Hermes 프로파일러 측정)

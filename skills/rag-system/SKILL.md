@@ -75,23 +75,35 @@ LangChain과 LlamaIndex를 활용한 프로덕션 RAG 파이프라인을 다수 
    | **ChromaDB** | 경량, 로컬 개발 최적 | 프로토타입, 소규모 데이터 |
    | **pgvector** | PostgreSQL 확장 | 기존 Postgres 인프라 활용 시 |
 
-3. **임베딩 모델 선택 및 청킹 전략**
-   ```python
-   # Semantic Chunking (LlamaIndex)
-   from llama_index.core.node_parser import SemanticSplitterNodeParser
-   from llama_index.embeddings.openai import OpenAIEmbedding
+3. **임베딩 모델 선택**
 
-   embed_model = OpenAIEmbedding(model="text-embedding-3-small")
-   splitter = SemanticSplitterNodeParser(
-       buffer_size=1,
-       breakpoint_percentile_threshold=95,
-       embed_model=embed_model,
+   2026년 MTEB 리더보드 상위 모델:
+   | 모델 | 특징 | 적합한 경우 |
+   |---|---|---|
+   | `text-embedding-3-large` | OpenAI, 3072dim, MTEB 상위권 | 영어 중심, 고성능 요구 |
+   | `voyage-3` | Anthropic 파트너, 검색 특화 | 코드/문서 검색, 낮은 latency |
+   | `multilingual-e5-large-instruct` | 오픈소스, 50+ 언어 지원 | 다국어(한국어 포함), 자체 호스팅 |
+   | `text-embedding-3-small` | OpenAI, 비용 효율적 | 빠른 프로토타입, 대용량 처리 |
+
+   **Dynamic Chunking 패턴** (document hierarchy + semantic boundary 결합):
+   ```python
+   # 1단계: 문서 계층 기반 분할 (헤더 구조 존중)
+   from langchain.text_splitter import MarkdownHeaderTextSplitter
+   header_splitter = MarkdownHeaderTextSplitter(
+       headers_to_split_on=[("#", "h1"), ("##", "h2"), ("###", "h3")]
    )
-   nodes = splitter.get_nodes_from_documents(documents)
+   header_chunks = header_splitter.split_text(document)
+
+   # 2단계: 큰 청크만 semantic boundary로 재분할
+   from llama_index.core.node_parser import SemanticSplitterNodeParser
+   fine_splitter = SemanticSplitterNodeParser(
+       breakpoint_percentile_threshold=92, embed_model=embed_model
+   )
+   # header_chunks 중 1000 토큰 초과 항목만 fine_splitter 적용
    ```
    - **Fixed-size**: 토큰 수 기반 분할 (500-1000 tokens), overlap 10-20%. 범용적
    - **Recursive**: 구분자 계층(`\n\n` → `\n` → `. ` → ` `)으로 분할. 구조화된 문서에 적합
-   - **Semantic**: 임베딩 유사도 기반 분할. 주제 전환 지점에서 자연스럽게 나눔
+   - **Dynamic**: 계층 구조 보존 → 초과 청크만 semantic 재분할. 기술 문서/매뉴얼에 최적
 
 4. **검색 최적화 (Retrieval Optimization)**
    ```python
@@ -108,7 +120,12 @@ LangChain과 LlamaIndex를 활용한 프로덕션 RAG 파이프라인을 다수 
    ```
    - **Query Transformation**: 원본 쿼리를 재작성하거나 하위 질문으로 분해
    - **HyDE (Hypothetical Document Embedding)**: LLM이 가상 답변을 생성, 해당 임베딩으로 검색
-   - **Re-ranking**: Cohere Rerank, Cross-encoder로 초기 결과를 재정렬 (정확도 대폭 향상)
+   - **Reranker 비교** (초기 결과 재정렬, 정확도 대폭 향상):
+     | Reranker | 특징 | 권장 상황 |
+     |---|---|---|
+     | **Cohere Rerank v3** | API형, 다국어 지원, 빠른 통합 | 빠른 출시, 한국어 포함 다국어 |
+     | **BGE-reranker-v2-m3** | 오픈소스, 자체 호스팅, 무료 | 비용 절감, 데이터 내부 보관 필요 |
+     | **ColBERT v2** | Late interaction, 고정밀 | 대규모 컬렉션, 최고 정밀도 요구 |
    - **Metadata Filtering**: 날짜, 카테고리 등 메타데이터로 검색 범위를 좁힘
 
 5. **Context Window 관리 및 프롬프트 구성**

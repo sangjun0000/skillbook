@@ -121,7 +121,45 @@ allowed-tools:
    ]);
    ```
 
-4. **API Gateway 라우팅**
+4. **Serverless 마이크로서비스 패턴**
+
+   서버리스 환경(AWS Lambda, Cloud Functions)에서는 기존 마이크로서비스 패턴을 다음과 같이 조정한다:
+   - **Event-driven 우선**: HTTP 동기 호출 대신 SQS/EventBridge/Pub/Sub 기반 비동기 트리거
+   - **트랜잭션리스 설계**: RDBMS 분산 트랜잭션 불가 → 멱등성(idempotency) + 보상 이벤트로 대체
+   - **Cold Start 최소화**: 핵심 경로에는 Provisioned Concurrency 또는 컨테이너 기반 서비스 유지
+   - **함수 단위 경계**: 각 Lambda = 하나의 Use Case. 공유 레이어로 중복 코드 최소화
+   ```
+   API Gateway → Lambda(주문생성) → SQS → Lambda(결제처리) → SQS → Lambda(알림발송)
+   실패 시: DLQ(Dead Letter Queue) → Lambda(보상 처리)
+   ```
+
+5. **분산 추적 (OpenTelemetry 기본 설정)**
+   ```typescript
+   // tracing.ts — 서비스 시작 시 최초 로드
+   import { NodeSDK } from '@opentelemetry/sdk-node';
+   import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+   import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+
+   const sdk = new NodeSDK({
+     traceExporter: new OTLPTraceExporter({
+       url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT, // Jaeger: http://jaeger:4318/v1/traces
+     }),                                               // Datadog: https://trace.agent.datadoghq.com
+     instrumentations: [new HttpInstrumentation()],
+   });
+   sdk.start();
+   // Trace ID가 HTTP 헤더(traceparent)로 서비스 간 자동 전파됨
+   ```
+   - Jaeger: 로컬/온프레미스 오픈소스 추적 UI (docker run jaegertracing/all-in-one)
+   - Datadog APM: 상용, 서비스 맵·이상 감지 포함, 프로덕션 권장
+
+6. **Service Mesh 개요**
+
+   서비스 수가 많아지면(10개+) sidecar proxy 기반 Service Mesh 도입을 고려한다:
+   - **Istio**: 기능 풍부(트래픽 관리, mTLS, 고급 라우팅), 운영 복잡도 높음. 대규모 K8s 환경
+   - **Linkerd**: 경량, 설치 단순, 기본 보안(mTLS 자동). 중소 규모 K8s 환경 진입점
+   - sidecar proxy(Envoy)가 각 Pod에 자동 주입 → 앱 코드 수정 없이 TLS, 재시도, 추적 적용
+
+7. **API Gateway 라우팅**
    ```typescript
    import express from 'express';
    import { createProxyMiddleware } from 'http-proxy-middleware';

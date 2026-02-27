@@ -162,6 +162,78 @@ Well-Architected Framework 5대 축 기반 아키텍처 리뷰와 개선에 정�
 (구매 옵션 권장, 예상 절감액)
 ```
 
+## AWS CDK v2 패턴 (TypeScript IaC)
+
+SAM 대신 CDK v2를 사용하면 TypeScript 타입 안전성과 추상화 레벨을 활용한 인프라 정의 가능.
+
+```typescript
+// lib/api-stack.ts
+import * as cdk from 'aws-cdk-lib';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as apigateway from 'aws-cdk-lib/aws-apigatewayv2';
+
+export class ApiStack extends cdk.Stack {
+  constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
+    super(scope, id, props);
+
+    const handler = new NodejsFunction(this, 'ApiHandler', {
+      entry: 'src/handler.ts',
+      runtime: cdk.aws_lambda.Runtime.NODEJS_20_X,
+      timeout: cdk.Duration.seconds(30),
+      environment: { TABLE_NAME: table.tableName },
+    });
+    table.grantReadWriteData(handler);  // IAM 권한 자동 부여
+
+    const api = new apigateway.HttpApi(this, 'HttpApi', {
+      defaultIntegration: new integrations.HttpLambdaIntegration('LambdaInt', handler),
+    });
+    new cdk.CfnOutput(this, 'ApiUrl', { value: api.apiEndpoint });
+  }
+}
+```
+
+`cdk deploy` 한 명령으로 CloudFormation 변경셋 생성 및 배포. `cdk diff`로 변경 사항 사전 확인.
+
+## Compute Savings Plan 절감 계산
+
+```
+시나리오: On-Demand c5.xlarge (4vCPU, 8GB) × 3대 × 24시간 × 730시간/월
+  - On-Demand: $0.192/hr × 3 × 730 = $420.5/월
+
+Compute Savings Plan (1년, No Upfront):
+  - 약 33% 할인 → $0.128/hr × 3 × 730 = $280.3/월 (절감 $140.2)
+
+Compute Savings Plan (3년, All Upfront):
+  - 약 52% 할인 → $0.092/hr × 3 × 730 = $201.5/월 (절감 $219)
+
+권장: 베이스라인 트래픽에 1년 Compute SP 적용, 피크 트래픽은 On-Demand로 커버.
+     Compute SP는 인스턴스 패밀리/리전 변경 시에도 유연하게 적용됨 (EC2 Instance SP보다 유리).
+```
+
+## VPC Endpoint 활용
+
+```hcl
+# Gateway Endpoint: S3, DynamoDB → NAT 비용 없이 프라이빗 서브넷에서 직접 접근
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = "com.amazonaws.ap-northeast-2.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.vpc.private_route_table_ids  # 라우팅 테이블 자동 업데이트
+}
+
+# Interface Endpoint: API Gateway Private (외부 인터넷 없이 VPC 내부에서 API 호출)
+resource "aws_vpc_endpoint" "api_gw" {
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.ap-northeast-2.execute-api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.endpoint_sg.id]
+  private_dns_enabled = true
+}
+```
+
+Gateway Endpoint(S3, DynamoDB)는 무료. Interface Endpoint는 시간당 과금이지만 NAT 데이터 처리 비용보다 절감 가능.
+
 ## 안티패턴
 
 - **단일 AZ 배포**: AZ 장애 시 전체 서비스 중단. 최소 2개 AZ에 분산 배치 필수
@@ -169,3 +241,4 @@ Well-Architected Framework 5대 축 기반 아키텍처 리뷰와 개선에 정�
 - **보안 그룹에 0.0.0.0/0**: 전체 IP 개방은 공격 표면 극대화. 필요한 포트와 소스 IP만 허용
 - **NAT Gateway 비용 무시**: 데이터 처리 비용이 높음. VPC Endpoint로 AWS 서비스 트래픽은 NAT 우회
 - **수동 인프라 변경**: 콘솔 직접 수정은 IaC와 drift 발생. 모든 변경은 IaC를 통해 수행
+- **Savings Plan 미적용**: 상시 운영 워크로드를 On-Demand로만 운영하면 30-50% 비용 낭비

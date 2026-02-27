@@ -47,32 +47,43 @@ Vercel 배포 환경에서의 서버리스 제약 사항과 최적화 기법을 
 
 1. **모델 선택 전략**
 
-   | 작업 유형 | 추천 모델 | 비용/성능 |
-   |---|---|---|
-   | 복잡한 추론/코딩 | Claude Opus, GPT-4o | 높은 비용, 최고 품질 |
-   | 일반 생성/요약 | Claude Sonnet, GPT-4o | 중간 비용, 우수 품질 |
-   | 단순 분류/추출 | Claude Haiku, GPT-4o-mini | 낮은 비용, 양호 품질 |
-   | 대량 배치 처리 | Claude Haiku, GPT-4o-mini | 최저 비용, 양호 품질 |
+   2026년 기준 최신 모델 ID (반드시 정확한 ID 사용):
+   | 작업 유형 | 추천 모델 | 모델 ID | 비용/성능 |
+   |---|---|---|---|
+   | 복잡한 추론/코딩 | Claude Opus 4.6 | `claude-opus-4-6` | 높은 비용, 최고 품질 |
+   | 일반 생성/요약 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | 중간 비용, 우수 품질 |
+   | 단순 분류/추출 | Claude Haiku 4.5 | `claude-haiku-4-5` | 낮은 비용, 양호 품질 |
+   | 대량 배치 처리 | Claude Haiku 4.5 | `claude-haiku-4-5` | 최저 비용, 양호 품질 |
 
    - 핵심 원칙: 가능한 가장 작은 모델부터 시작하여 품질이 부족할 때만 상위 모델로 이동
    - Router 패턴: 입력 복잡도를 판단하여 동적으로 모델을 선택하는 라우터 구현
 
 2. **Streaming 아키텍처**
 
-   **Next.js (App Router) + Vercel AI SDK:**
+   **Next.js (App Router) + Vercel AI SDK v2 (`@ai-sdk/anthropic`):**
    ```typescript
-   // app/api/chat/route.ts
-   import { streamText } from 'ai';
+   // app/api/chat/route.ts — Vercel AI SDK v2 최신 패턴
+   import { streamText, generateObject } from 'ai';
    import { anthropic } from '@ai-sdk/anthropic';
+   import { z } from 'zod';
 
+   // 스트리밍 텍스트
    export async function POST(req: Request) {
      const { messages } = await req.json();
      const result = streamText({
-       model: anthropic('claude-sonnet-4-20250514'),
+       model: anthropic('claude-sonnet-4-6'),
        messages,
+       maxTokens: 1024,
      });
      return result.toDataStreamResponse();
    }
+
+   // 구조화된 객체 생성 (generateObject)
+   const { object } = await generateObject({
+     model: anthropic('claude-haiku-4-5'),
+     schema: z.object({ sentiment: z.enum(['positive', 'negative', 'neutral']) }),
+     prompt: `Classify: ${userText}`,
+   });
    ```
 
    **FastAPI + SSE:**
@@ -95,7 +106,21 @@ Vercel 배포 환경에서의 서버리스 제약 사항과 최적화 기법을 
    ```
 
 3. **토큰 비용 최적화**
-   - **프롬프트 캐싱**: Anthropic Prompt Caching으로 반복되는 System Prompt 비용 90% 절감
+   - **프롬프트 캐싱 (Prompt Caching)**: `cache_control` 블록으로 반복 System Prompt 비용 90% 절감
+     ```python
+     # Anthropic SDK — cache_control으로 긴 시스템 프롬프트 캐싱
+     messages = client.messages.create(
+         model="claude-sonnet-4-6",
+         system=[{
+             "type": "text",
+             "text": long_system_prompt,          # 수천 토큰의 고정 컨텍스트
+             "cache_control": {"type": "ephemeral"}  # 5분간 캐시 유지
+         }],
+         messages=user_messages,
+         max_tokens=1024,
+     )
+     # 효과: 캐시 히트 시 입력 토큰 비용 ~90% 절감 (write 1회, read N회)
+     ```
    - **컨텍스트 윈도우 관리**: 대화 기록을 요약하여 토큰 수 제한 (sliding window + summarization)
    - **출력 길이 제한**: `max_tokens`를 작업에 맞게 설정하여 불필요한 생성 방지
    - **배치 API 활용**: 비실시간 작업은 Batch API로 처리하여 50% 비용 절감
