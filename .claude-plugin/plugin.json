@@ -1,0 +1,11 @@
+{
+  "name": "skillbook",
+  "version": "1.0.0",
+  "description": "A curated collection of expert skills for Claude Code — Business, AI/LLM, Development, Product, and Meta skills",
+  "author": {
+    "name": "sangjun0000"
+  },
+  "repository": "https://github.com/sangjun0000/skillbook",
+  "homepage": "https://skillbook-site.vercel.app",
+  "license": "MIT"
+}
