@@ -1,5 +1,6 @@
 ---
 name: database
+category: dev
 description: "PostgreSQL schema design, normalization, indexing strategy, query optimization, and ORM patterns with Prisma/Drizzle"
 user-invocable: true
 allowed-tools:

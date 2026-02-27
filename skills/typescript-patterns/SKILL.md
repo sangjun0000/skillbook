@@ -1,5 +1,6 @@
 ---
 name: typescript-patterns
+category: dev
 description: "Advanced TypeScript patterns including generics, utility types, type guards, discriminated unions, and type-safe design patterns"
 user-invocable: true
 allowed-tools:

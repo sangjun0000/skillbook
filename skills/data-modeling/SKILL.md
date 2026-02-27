@@ -1,5 +1,6 @@
 ---
 name: data-modeling
+category: data
 description: "Data modeling for analytics — dimensional modeling, star/snowflake schemas, slowly changing dimensions, and dbt model layers"
 user-invocable: true
 allowed-tools:

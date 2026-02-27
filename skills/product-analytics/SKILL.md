@@ -1,5 +1,6 @@
 ---
 name: product-analytics
+category: product
 description: "Product analytics including funnel analysis, cohort analysis, A/B testing methodology, AARRR metrics, and event tracking architecture"
 user-invocable: true
 allowed-tools:

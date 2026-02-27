@@ -1,5 +1,6 @@
 ---
 name: devops-cicd
+category: dev
 description: "CI/CD pipeline design, Docker containerization, GitHub Actions workflows, and deployment automation strategies"
 user-invocable: true
 allowed-tools:

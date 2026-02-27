@@ -1,5 +1,6 @@
 ---
 name: monitoring-observability
+category: infra
 description: "Monitoring and observability — metrics, logs, traces (three pillars), alerting strategies, SLI/SLO/SLA, and incident response"
 user-invocable: true
 allowed-tools:

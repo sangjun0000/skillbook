@@ -1,5 +1,6 @@
 ---
 name: ux-research
+category: product
 description: "UX research methodology including user interviews, usability testing, affinity diagrams, persona creation, and journey mapping"
 user-invocable: true
 allowed-tools:

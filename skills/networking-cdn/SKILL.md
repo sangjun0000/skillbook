@@ -1,5 +1,6 @@
 ---
 name: networking-cdn
+category: infra
 description: "Web networking fundamentals — DNS configuration, CDN optimization, load balancing, SSL/TLS, and edge computing patterns"
 user-invocable: true
 allowed-tools:

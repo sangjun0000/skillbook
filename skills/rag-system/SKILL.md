@@ -1,5 +1,6 @@
 ---
 name: rag-system
+category: ai
 description: "RAG (Retrieval Augmented Generation) system architecture including vector databases, embedding strategies, chunking, and retrieval optimization"
 user-invocable: true
 allowed-tools:

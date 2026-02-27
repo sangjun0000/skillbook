@@ -1,5 +1,6 @@
 ---
 name: security
+category: dev
 description: "보안 작업 시 완료 전 OWASP 감사 강제, CSP/보안 헤더 의무화, 파라미터화 쿼리 강제, bcrypt cost 12+ 요구"
 user-invocable: true
 allowed-tools:

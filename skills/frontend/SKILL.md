@@ -1,5 +1,6 @@
 ---
 name: frontend
+category: dev
 description: "Next.js 프론트엔드 개발 시 기존 패턴을 먼저 분석하고, Server Component를 기본으로 강제하며, 접근성과 성능 기준을 통과해야만 완료로 인정한다"
 user-invocable: true
 allowed-tools:

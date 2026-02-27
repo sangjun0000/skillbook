@@ -1,5 +1,6 @@
 ---
 name: code-review-skill
+category: meta
 description: "Code review best practices — review checklist, constructive feedback patterns, PR conventions, and team review culture building"
 user-invocable: true
 allowed-tools:

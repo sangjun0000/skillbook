@@ -1,5 +1,6 @@
 ---
 name: data-pipeline
+category: data
 description: "Data pipeline architecture — ETL/ELT design, batch and stream processing, data quality validation, and orchestration with Airflow/Dagster"
 user-invocable: true
 allowed-tools:

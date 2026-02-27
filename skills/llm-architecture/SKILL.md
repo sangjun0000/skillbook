@@ -1,5 +1,6 @@
 ---
 name: llm-architecture
+category: ai
 description: "Production-grade LLM application architecture — streaming, token cost optimization, model selection, fallback strategies, and caching"
 user-invocable: true
 allowed-tools:

@@ -1,5 +1,6 @@
 ---
 name: app-store-optimization
+category: mobile
 description: "키워드 배치 규칙 강제, 스크린샷 순서 의무화, 리뷰 요청 조건 적용, 메타데이터 글자 수 제한 검증"
 user-invocable: true
 allowed-tools:

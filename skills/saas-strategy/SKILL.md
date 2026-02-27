@@ -1,5 +1,6 @@
 ---
 name: saas-strategy
+category: business
 description: "SaaS 전략 수립 시 유닛 이코노믹스 게이트를 강제하고, 코호트 분석을 의무화하며, 성장 단계에 맞는 전략만 실행한다"
 user-invocable: true
 allowed-tools:

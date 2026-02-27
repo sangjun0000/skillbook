@@ -1,5 +1,6 @@
 ---
 name: onboarding
+category: product
 description: "Aha Moment 정의 강제, Activation 지표 측정 의무화, Time-to-Value 최소화, 완료율 추적 요구"
 user-invocable: true
 allowed-tools:

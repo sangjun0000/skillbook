@@ -1,5 +1,6 @@
 ---
 name: iac-terraform
+category: infra
 description: "Infrastructure as Code with Terraform — HCL syntax, state management, module design, and multi-environment provisioning"
 user-invocable: true
 allowed-tools:

@@ -1,5 +1,6 @@
 ---
 name: system-design
+category: architecture
 description: "System design for scalability and reliability — capacity planning, caching strategies, database sharding, rate limiting, and distributed patterns"
 user-invocable: true
 allowed-tools:

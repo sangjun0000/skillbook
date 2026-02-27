@@ -1,5 +1,6 @@
 ---
 name: growth-hack
+category: product
 description: "가설 기반 실험 강제, 측정 선행 의무화, North Star Metric 정렬, 통계적 유의성 요구"
 user-invocable: true
 allowed-tools:

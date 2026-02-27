@@ -1,5 +1,6 @@
 ---
 name: pitch-deck
+category: business
 description: "Pitch deck creation for investors and stakeholders — problem-solution narrative, market sizing, business model, traction, and financial projections"
 user-invocable: true
 allowed-tools:

@@ -1,5 +1,6 @@
 ---
 name: feature-spec
+category: product
 description: "기능 명세 작성 시 RICE 스코어링 먼저 강제, Given-When-Then 수용 기준 의무화, In/Out Scope 명시 요구"
 user-invocable: true
 allowed-tools:

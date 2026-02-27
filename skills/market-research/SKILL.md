@@ -1,5 +1,6 @@
 ---
 name: market-research
+category: business
 description: "Data-driven market analysis and opportunity discovery for product strategy — TAM/SAM/SOM, customer segmentation, and trend forecasting"
 user-invocable: true
 allowed-tools:

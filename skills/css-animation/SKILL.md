@@ -1,5 +1,6 @@
 ---
 name: css-animation
+category: dev
 description: "CSS 애니메이션 구현 시 GPU-friendly 속성만 사용하고, prefers-reduced-motion을 의무화하며, 프로젝트 duration 토큰을 준수한다"
 user-invocable: true
 allowed-tools:

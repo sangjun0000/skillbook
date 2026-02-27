@@ -1,5 +1,6 @@
 ---
 name: knowledge-management
+category: meta
 description: "Team knowledge management — ADRs, runbooks, wiki organization, incident postmortems, and onboarding documentation systems"
 user-invocable: true
 allowed-tools:

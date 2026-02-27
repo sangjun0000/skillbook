@@ -1,5 +1,6 @@
 ---
 name: clean-architecture
+category: architecture
 description: "클린 아키텍처 구현 시 의존성 방향을 검증하고, Entity 순수성을 강제하며, Port 정의 전에는 Adapter를 절대 작성하지 않는다"
 user-invocable: true
 allowed-tools:

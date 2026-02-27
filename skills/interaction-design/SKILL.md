@@ -1,5 +1,6 @@
 ---
 name: interaction-design
+category: design
 description: "Interaction design — micro-interactions, feedback patterns, state transitions, loading strategies, and gesture-based interfaces"
 user-invocable: true
 allowed-tools:

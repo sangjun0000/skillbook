@@ -1,5 +1,6 @@
 ---
 name: documentation
+category: meta
 description: "Technical documentation including API docs, README files, architecture decision records, and developer guides with clear structure"
 user-invocable: true
 allowed-tools:

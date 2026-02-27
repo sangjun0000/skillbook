@@ -1,5 +1,6 @@
 ---
 name: competitor-analysis
+category: business
 description: "Systematic competitive landscape analysis for differentiation strategy — Porter's Five Forces, positioning maps, and competitive intelligence"
 user-invocable: true
 allowed-tools:

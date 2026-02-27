@@ -1,5 +1,6 @@
 ---
 name: sql-optimization
+category: data
 description: "Advanced SQL optimization — query execution plans, index strategy, window functions, CTEs, and PostgreSQL performance tuning"
 user-invocable: true
 allowed-tools:

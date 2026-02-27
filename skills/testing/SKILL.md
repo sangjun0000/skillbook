@@ -1,5 +1,6 @@
 ---
 name: testing
+category: dev
 description: "테스트 작성 시 Test Pyramid 비율 강제, test-first 접근법 의무화, 격리성 검증, flaky test 탐지"
 user-invocable: true
 allowed-tools:

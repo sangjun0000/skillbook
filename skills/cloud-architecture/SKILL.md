@@ -1,5 +1,6 @@
 ---
 name: cloud-architecture
+category: infra
 description: "Cloud architecture design on AWS/GCP/Azure — service selection, cost optimization, high availability, and Well-Architected Framework"
 user-invocable: true
 allowed-tools:

@@ -1,5 +1,6 @@
 ---
 name: ddd
+category: architecture
 description: "Domain-Driven Design — bounded contexts, aggregates, domain events, ubiquitous language, and strategic/tactical patterns"
 user-invocable: true
 allowed-tools:

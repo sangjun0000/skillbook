@@ -1,5 +1,6 @@
 ---
 name: app-performance
+category: mobile
 description: "Mobile app performance — rendering optimization, memory management, network efficiency, startup time, and profiling tools"
 user-invocable: true
 allowed-tools:

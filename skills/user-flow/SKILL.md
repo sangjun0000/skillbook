@@ -1,5 +1,6 @@
 ---
 name: user-flow
+category: design
 description: "User flow and information architecture — task flow diagrams, site maps, navigation design, and decision tree optimization"
 user-invocable: true
 allowed-tools:

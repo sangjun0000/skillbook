@@ -1,5 +1,6 @@
 ---
 name: mcp-integration
+category: ai
 description: "Model Context Protocol (MCP) server and client integration, tool definition, resource management, and Claude Code plugin development"
 user-invocable: true
 allowed-tools:

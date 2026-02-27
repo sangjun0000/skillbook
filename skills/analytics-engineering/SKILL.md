@@ -1,5 +1,6 @@
 ---
 name: analytics-engineering
+category: data
 description: "Analytics engineering with dbt — model design, testing, documentation, materialization strategies, and data quality frameworks"
 user-invocable: true
 allowed-tools:

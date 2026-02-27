@@ -1,5 +1,6 @@
 ---
 name: accessibility
+category: design
 description: "Web accessibility (a11y) — WCAG 2.2 compliance, screen reader optimization, keyboard navigation, ARIA patterns, and automated testing"
 user-invocable: true
 allowed-tools:

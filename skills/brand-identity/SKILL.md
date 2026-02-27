@@ -1,5 +1,6 @@
 ---
 name: brand-identity
+category: design
 description: "WCAG 색상 대비 검증 강제, 크로스 터치포인트 일관성 점검 의무화, Voice/Tone 문서화와 예시 작성 요구"
 user-invocable: true
 allowed-tools:

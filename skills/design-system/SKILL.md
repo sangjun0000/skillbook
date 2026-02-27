@@ -1,5 +1,6 @@
 ---
 name: design-system
+category: design
 description: "Design system architecture — design tokens, component library, documentation, versioning, and cross-platform consistency"
 user-invocable: true
 allowed-tools:

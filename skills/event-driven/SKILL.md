@@ -1,5 +1,6 @@
 ---
 name: event-driven
+category: architecture
 description: "Event-driven architecture — message queues, event sourcing, CQRS, pub/sub patterns, and eventual consistency strategies"
 user-invocable: true
 allowed-tools:

@@ -1,5 +1,6 @@
 ---
 name: web-visual-design
+category: dev
 description: "Web visual design system — typography scales, color theory, spacing rhythm, layout composition, and WCAG accessibility"
 user-invocable: true
 allowed-tools:

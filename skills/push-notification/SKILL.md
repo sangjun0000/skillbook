@@ -1,5 +1,6 @@
 ---
 name: push-notification
+category: mobile
 description: "Push notification strategy — timing optimization, personalization, permission management, rich notifications, and engagement metrics"
 user-invocable: true
 allowed-tools:

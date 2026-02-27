@@ -1,5 +1,6 @@
 ---
 name: microservices
+category: architecture
 description: "Microservices architecture design — service decomposition, inter-service communication, data management, and distributed system patterns"
 user-invocable: true
 allowed-tools:

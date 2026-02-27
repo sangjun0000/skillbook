@@ -1,5 +1,6 @@
 ---
 name: react-native
+category: mobile
 description: "React Native cross-platform development — Expo workflow, navigation patterns, native modules, and platform-specific optimization"
 user-invocable: true
 allowed-tools:

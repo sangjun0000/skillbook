@@ -1,5 +1,6 @@
 ---
 name: data-visualization
+category: data
 description: "시각화 작업 시 차트 유형 선택 매트릭스 강제, 색각 이상 안전 팔레트 의무화, data-ink ratio 강제, 반응형 크기 요구"
 user-invocable: true
 allowed-tools:

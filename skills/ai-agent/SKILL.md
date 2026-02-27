@@ -1,5 +1,6 @@
 ---
 name: ai-agent
+category: ai
 description: "AI 에이전트 설계 시 안전 경계를 먼저 강제하고, 고위험 작업에 인간 승인 게이트를 의무화하며, 루프 제어 없는 에이전트는 절대 출력하지 않는다"
 user-invocable: true
 allowed-tools:

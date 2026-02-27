@@ -1,5 +1,6 @@
 ---
 name: container-orchestration
+category: infra
 description: "Container orchestration with Kubernetes and Docker Compose — pod design, service mesh, helm charts, and cluster management"
 user-invocable: true
 allowed-tools:
