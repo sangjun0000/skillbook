@@ -1,7 +1,7 @@
 {
   "name": "skillbook",
-  "version": "3.0.0",
-  "description": "A curated collection of 48 expert skills for Claude Code — Business, AI/LLM, Architecture, Development, Infrastructure, Data, Product, Mobile, Design, and Meta",
+  "version": "3.1.0",
+  "description": "48 expert skills for Claude Code — 13 workflow skills (behavioral rules) + 35 domain skills (specialized knowledge)",
   "author": {
     "name": "sangjun0000"
   },
