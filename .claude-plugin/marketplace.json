@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "skillbook-marketplace",
-  "version": "1.0.0",
-  "description": "A curated collection of expert skills for Claude Code — Business, AI/LLM, Development, Product, and Meta skills",
+  "version": "2.0.0",
+  "description": "A curated collection of 55 expert skills for Claude Code — Business, AI/LLM, Architecture, Development, Infrastructure, Data, Product, Mobile, Design, and Meta",
   "owner": {
     "name": "sangjun0000",
     "url": "https://github.com/sangjun0000"
@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "skillbook",
-      "description": "14 expert skills across Business (market research, competitor analysis, SaaS strategy), AI/LLM (prompt engineering, LLM architecture, AI agents), Development (API design, frontend, database, visual design, CSS animation, responsive web), and Meta (skill creator, skill evaluator).",
-      "version": "1.0.0",
+      "description": "55 expert skills across 10 categories: Business, AI/LLM, Architecture, Development, Infrastructure, Data, Product, Mobile, Design, and Meta.",
+      "version": "2.0.0",
       "author": {
         "name": "sangjun0000"
       },
@@ -27,13 +27,16 @@
         "business",
         "ai",
         "llm",
+        "architecture",
         "development",
+        "infrastructure",
+        "data",
+        "product",
+        "mobile",
+        "design",
         "prompt-engineering",
-        "api-design",
-        "frontend",
-        "database",
-        "market-research",
-        "saas"
+        "microservices",
+        "react-native"
       ]
     }
   ]
