@@ -1,7 +1,7 @@
 {
   "name": "skillbook",
-  "version": "1.0.1",
-  "description": "A curated collection of expert skills for Claude Code — Business, AI/LLM, Development, Product, and Meta skills",
+  "version": "2.0.0",
+  "description": "A curated collection of 55 expert skills for Claude Code — Business, AI/LLM, Architecture, Development, Infrastructure, Data, Product, Mobile, Design, and Meta",
   "author": {
     "name": "sangjun0000"
   },
