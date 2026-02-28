@@ -1,7 +1,7 @@
 {
   "name": "skillbook",
-  "version": "3.4.0",
-  "description": "60 expert skills for Claude Code — 15 workflow skills (behavioral rules) + 45 deep domain skills (specialized knowledge with 2026 best practices)",
+  "version": "3.6.0",
+  "description": "64 expert skills for Claude Code — 15 workflow skills (behavioral rules) + 49 deep domain skills (specialized knowledge with 2026 best practices)",
   "author": {
     "name": "sangjun0000"
   },
