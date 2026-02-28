@@ -5,6 +5,8 @@ import {
   bumpVersion,
   updatePluginJson,
   updateMarketplaceJson,
+  stripFrontmatter,
+  generateIndexMd,
 } from "../sync-engine.mjs";
 
 // ── Minimal meta fixture ────────────────────────────────────────────────────
@@ -324,5 +326,101 @@ describe("updateMarketplaceJson", () => {
     updateMarketplaceJson(original, "9.9.9", 99, 9, 90);
     assert.equal(original.version, "3.2.0");
     assert.equal(original.plugins[0].version, "3.2.0");
+  });
+});
+
+// ── stripFrontmatter ─────────────────────────────────────────────────────────
+
+describe("stripFrontmatter", () => {
+  test("removes YAML frontmatter", () => {
+    const input = `---\nname: test\ncategory: dev\n---\n# Heading\n\nBody text`;
+    const result = stripFrontmatter(input);
+    assert.equal(result, "# Heading\n\nBody text");
+  });
+
+  test("removes leading blank lines after frontmatter", () => {
+    const input = `---\nname: test\n---\n\n\n# Heading`;
+    const result = stripFrontmatter(input);
+    assert.equal(result, "# Heading");
+  });
+
+  test("returns content unchanged when no frontmatter", () => {
+    const input = "# Heading\n\nBody text";
+    const result = stripFrontmatter(input);
+    assert.equal(result, input);
+  });
+
+  test("returns content unchanged when frontmatter is not closed", () => {
+    const input = "---\nname: test\n# Heading";
+    const result = stripFrontmatter(input);
+    assert.equal(result, input);
+  });
+
+  test("handles frontmatter with complex values", () => {
+    const input = `---\nname: test\ndescription: "has --- dashes"\nallowed-tools:\n  - Read\n  - Write\n---\nBody`;
+    const result = stripFrontmatter(input);
+    assert.equal(result, "Body");
+  });
+});
+
+// ── generateIndexMd ──────────────────────────────────────────────────────────
+
+describe("generateIndexMd", () => {
+  const indexMeta = {
+    categories: [
+      { id: "business", label: "Business", icon: "📊", description: { ko: "비즈니스", en: "Business" } },
+      { id: "dev", label: "Development", icon: "💻", description: { ko: "개발", en: "Dev" } },
+      { id: "meta", label: "Meta", icon: "🔧", description: { ko: "메타", en: "Meta" } },
+    ],
+    skills: [
+      { id: "market-research", category: "business", description: { ko: "시장조사 스킬", en: "Market research" }, name: { ko: "시장조사", en: "Market Research" } },
+      { id: "frontend", category: "dev", description: { ko: "프론트엔드 개발", en: "Frontend dev" }, name: { ko: "프론트엔드", en: "Frontend" } },
+      { id: "documentation", category: "meta", description: { ko: "문서화", en: "Documentation" }, name: { ko: "문서화", en: "Documentation" } },
+      { id: "health", category: "meta", description: { ko: "헬스체크", en: "Health check" }, name: { ko: "헬스", en: "Health" } },
+      { id: "manage", category: "meta", description: { ko: "관리", en: "Manage" }, name: { ko: "관리", en: "Manage" } },
+      { id: "sync", category: "meta", description: { ko: "동기화", en: "Sync" }, name: { ko: "동기화", en: "Sync" } },
+    ],
+  };
+
+  test("starts with header", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(result.startsWith("# Skill Book Index"), "must start with header");
+  });
+
+  test("contains category headings", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(result.includes("## Business"), "must include Business category");
+    assert.ok(result.includes("## Development"), "must include Development category");
+    assert.ok(result.includes("## Meta"), "must include Meta category");
+  });
+
+  test("formats skills as ### category/id.md", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(result.includes("### business/market-research.md"), "must format skill path");
+    assert.ok(result.includes("### dev/frontend.md"), "must format dev skill path");
+  });
+
+  test("uses Korean description", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(result.includes("시장조사 스킬"), "must include Korean description");
+    assert.ok(result.includes("프론트엔드 개발"), "must include Korean description for frontend");
+  });
+
+  test("excludes meta automation skills (health, manage, sync)", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(!result.includes("### meta/health.md"), "must exclude health");
+    assert.ok(!result.includes("### meta/manage.md"), "must exclude manage");
+    assert.ok(!result.includes("### meta/sync.md"), "must exclude sync");
+  });
+
+  test("includes non-automation meta skills", () => {
+    const result = generateIndexMd(indexMeta);
+    assert.ok(result.includes("### meta/documentation.md"), "must include documentation");
+  });
+
+  test("skill count matches (excluding automation)", () => {
+    const result = generateIndexMd(indexMeta);
+    const skillHeaders = result.split("\n").filter(l => l.startsWith("### "));
+    assert.equal(skillHeaders.length, 3, "must have 3 skills (6 total - 3 automation)");
   });
 });

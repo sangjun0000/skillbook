@@ -14,9 +14,10 @@
  *   node tools/sync-engine.mjs [--bump patch|minor|major]
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, rmdirSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { homedir } from "node:os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,6 +29,10 @@ const DATA_TS_PATH = resolve(PLUGIN_ROOT, "../skillbook-site/app/data.ts");
 const PLUGIN_JSON_PATH = resolve(PLUGIN_ROOT, ".claude-plugin/plugin.json");
 const MARKETPLACE_JSON_PATH = resolve(PLUGIN_ROOT, ".claude-plugin/marketplace.json");
 const SKILLS_DIR = resolve(PLUGIN_ROOT, "skills");
+const LEGACY_DIR = resolve(homedir(), ".claude", "skillbook");
+
+// Meta automation skill IDs — excluded from legacy index
+const META_AUTOMATION_IDS = new Set(["health", "manage", "sync"]);
 
 // Workflow skill IDs — these are behavioral rule skills (not deep domain)
 const WORKFLOW_IDS = new Set([
@@ -44,6 +49,8 @@ const WORKFLOW_IDS = new Set([
   "onboarding",
   "app-store-optimization",
   "brand-identity",
+  "migration-strategy",
+  "ai-evaluation",
 ]);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -262,12 +269,126 @@ export function updateMarketplaceJson(original, newVersion, total, workflow, dom
   return updated;
 }
 
+// ── Legacy sync functions ────────────────────────────────────────────────────
+
+/**
+ * Strip YAML frontmatter (--- ... ---) from file content.
+ * Returns the body after the closing --- delimiter.
+ */
+export function stripFrontmatter(content) {
+  if (!content.startsWith("---")) return content;
+  const end = content.indexOf("\n---", 3);
+  if (end === -1) return content;
+  return content.slice(end + 4).replace(/^\n+/, "");
+}
+
+/**
+ * Generate _index.md content from skills-meta.json.
+ * Groups skills by category, excludes meta automation skills.
+ */
+export function generateIndexMd(meta) {
+  const lines = [];
+  lines.push("# Skill Book Index");
+  lines.push("");
+  lines.push("Read this file to find relevant skills for the current task.");
+  lines.push("Select skills based on semantic relevance to the user's request, not keyword matching.");
+  lines.push("");
+  lines.push("---");
+
+  // Group skills by category (preserving category order from meta)
+  const grouped = new Map();
+  for (const cat of meta.categories) {
+    grouped.set(cat.id, []);
+  }
+  for (const skill of meta.skills) {
+    if (META_AUTOMATION_IDS.has(skill.id)) continue;
+    if (!grouped.has(skill.category)) grouped.set(skill.category, []);
+    grouped.get(skill.category).push(skill);
+  }
+
+  for (const cat of meta.categories) {
+    const skills = grouped.get(cat.id);
+    if (!skills || skills.length === 0) continue;
+    lines.push("");
+    lines.push(`## ${cat.label}`);
+    lines.push("");
+    for (const skill of skills) {
+      lines.push(`### ${skill.category}/${skill.id}.md`);
+      lines.push(skill.description.ko);
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/**
+ * Sync plugin SKILL.md files to ~/.claude/skillbook/{category}/{name}.md
+ * Strips frontmatter, generates _index.md, and cleans stale files.
+ * Returns the number of skills synced.
+ */
+export function syncToLegacy(meta) {
+  mkdirSync(LEGACY_DIR, { recursive: true });
+
+  const validPaths = new Set();
+  let synced = 0;
+
+  for (const skill of meta.skills) {
+    if (META_AUTOMATION_IDS.has(skill.id)) continue;
+
+    const srcPath = resolve(SKILLS_DIR, skill.id, "SKILL.md");
+    if (!existsSync(srcPath)) {
+      console.warn(`  WARN: ${srcPath} not found, skipping`);
+      continue;
+    }
+
+    const destDir = resolve(LEGACY_DIR, skill.category);
+    mkdirSync(destDir, { recursive: true });
+    const destPath = resolve(destDir, `${skill.id}.md`);
+
+    const content = readFileSync(srcPath, "utf8");
+    writeFileSync(destPath, stripFrontmatter(content), "utf8");
+    validPaths.add(destPath);
+    synced++;
+  }
+
+  // Generate _index.md
+  const indexContent = generateIndexMd(meta);
+  const indexPath = resolve(LEGACY_DIR, "_index.md");
+  writeFileSync(indexPath, indexContent, "utf8");
+
+  // Clean stale files and empty directories
+  cleanLegacyDir(LEGACY_DIR, validPaths, indexPath);
+
+  return synced;
+}
+
+/**
+ * Recursively remove .md files not in validPaths and empty directories.
+ */
+function cleanLegacyDir(baseDir, validPaths, indexPath) {
+  for (const entry of readdirSync(baseDir)) {
+    const fullPath = resolve(baseDir, entry);
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      cleanLegacyDir(fullPath, validPaths, indexPath);
+      try {
+        if (readdirSync(fullPath).length === 0) rmdirSync(fullPath);
+      } catch { /* ignore */ }
+    } else if (fullPath.endsWith(".md") && fullPath !== indexPath && !validPaths.has(fullPath)) {
+      unlinkSync(fullPath);
+      console.log(`  Removed stale: ${fullPath}`);
+    }
+  }
+}
+
 // ── CLI entry point ───────────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
   const bumpIdx = args.indexOf("--bump");
   const bumpType = bumpIdx >= 0 ? args[bumpIdx + 1] : null;
+  const noLegacy = args.includes("--no-legacy");
 
   if (bumpType && !["patch", "minor", "major"].includes(bumpType)) {
     console.error(`Invalid bump type: "${bumpType}". Use patch, minor, or major.`);
@@ -290,7 +411,16 @@ async function main() {
   writeFileSync(DATA_TS_PATH, tsContent, "utf8");
   console.log(`Written: ${DATA_TS_PATH}`);
 
-  // 4. Optionally bump versions
+  // 4. Sync to legacy directory (~/.claude/skillbook/)
+  if (!noLegacy) {
+    console.log(`Syncing to legacy directory: ${LEGACY_DIR}...`);
+    const synced = syncToLegacy(meta);
+    console.log(`Synced ${synced} skills to legacy directory.`);
+  } else {
+    console.log("Skipping legacy sync (--no-legacy).");
+  }
+
+  // 5. Optionally bump versions
   if (bumpType) {
     // Read current versions
     const pluginJson = JSON.parse(readFileSync(PLUGIN_JSON_PATH, "utf8"));
