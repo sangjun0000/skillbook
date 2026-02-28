@@ -27,7 +27,9 @@
       "step3Cmd": "/skillbook:market-research",
       "copied": "복사됨!",
       "browseSkills": "스킬 둘러보기 ↓",
-      "howToUse": "사용 예시"
+      "howToUse": "사용 예시",
+      "used": "사용",
+      "totalUsed": "총 사용"
     },
     "en": {
       "title": "Skill Book",
@@ -56,7 +58,9 @@
       "step3Cmd": "/skillbook:market-research",
       "copied": "Copied!",
       "browseSkills": "Browse Skills ↓",
-      "howToUse": "Usage Example"
+      "howToUse": "Usage Example",
+      "used": "Used",
+      "totalUsed": "Total Used"
     }
   },
   "categories": [

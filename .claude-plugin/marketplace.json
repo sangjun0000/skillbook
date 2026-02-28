@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "skillbook-marketplace",
-  "version": "3.6.0",
+  "version": "3.6.1",
   "description": "64 expert skills for Claude Code — 15 workflow skills (behavioral rules) + 49 deep domain skills (specialized knowledge with 2026 best practices)",
   "owner": {
     "name": "sangjun0000",
@@ -11,7 +11,7 @@
     {
       "name": "skillbook",
       "description": "64 skills: 15 workflow (behavioral rules that change Claude's actions) + 49 deep domain (specialized knowledge with 2026 best practices).",
-      "version": "3.6.0",
+      "version": "3.6.1",
       "author": {
         "name": "sangjun0000"
       },

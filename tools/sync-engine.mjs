@@ -126,6 +126,7 @@ export function generateDataTs(meta) {
   lines.push(`  processSteps: number;`);
   lines.push(`  antiPatterns: { ko: string; en: string }[];`);
   lines.push(`  lineCount: number;`);
+  lines.push(`  usageCount: number;`);
   lines.push(`  path: string;`);
   lines.push(`}`);
   lines.push(``);
@@ -196,6 +197,7 @@ export function generateDataTs(meta) {
     lines.push(`    ],`);
 
     lines.push(`    lineCount: ${skill.lineCount},`);
+    lines.push(`    usageCount: ${skill.usageCount ?? 0},`);
     lines.push(`    path: ${tsStr(skill.path)},`);
     lines.push(`  },`);
   }
@@ -403,6 +405,21 @@ async function main() {
   console.log("Counting lines from SKILL.md files...");
   for (const skill of meta.skills) {
     skill.lineCount = countSkillLines(skill.path, skill.lineCount);
+  }
+
+  // 2.5. Load usage stats from ~/.claude/skillbook-stats.json
+  const statsPath = resolve(homedir(), ".claude", "skillbook-stats.json");
+  let usageStats = {};
+  if (existsSync(statsPath)) {
+    try {
+      usageStats = JSON.parse(readFileSync(statsPath, "utf8"));
+      console.log(`Loaded usage stats from ${statsPath}`);
+    } catch {
+      console.warn(`WARN: Could not parse ${statsPath}, using empty stats`);
+    }
+  }
+  for (const skill of meta.skills) {
+    skill.usageCount = usageStats[skill.id]?.count ?? 0;
   }
 
   // 3. Generate data.ts
