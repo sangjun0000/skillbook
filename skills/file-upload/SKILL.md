@@ -1,7 +1,7 @@
 ---
 name: file-upload
 category: dev
-description: "File upload and storage architecture — S3/R2 presigned URLs, multipart upload, image processing pipeline, CORS configuration, content validation, and CDN serving"
+description: "Use when implementing file uploads, image processing, S3/R2 storage, or serving files via CDN. Triggers on: 'file upload', 'image upload', 'S3', 'R2', 'presigned URL', 'multipart', '파일 업로드', '이미지 업로드', '첨부', 'storage', 'CDN'."
 user-invocable: true
 allowed-tools:
   - Read

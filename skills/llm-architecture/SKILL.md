@@ -1,7 +1,7 @@
 ---
 name: llm-architecture
 category: ai
-description: "Production-grade LLM application architecture — streaming, token cost optimization, model selection, fallback strategies, and caching"
+description: "Use when integrating AI/LLM features, calling Claude/GPT APIs, implementing streaming responses, or optimizing token costs. Triggers on: 'AI', 'LLM', 'GPT', 'Claude API', 'streaming', 'AI SDK', 'Vercel AI', '챗봇', 'chatbot', 'token', '모델 호출'."
 user-invocable: true
 allowed-tools:
   - Read

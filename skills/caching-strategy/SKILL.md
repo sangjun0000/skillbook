@@ -1,7 +1,7 @@
 ---
 name: caching-strategy
 category: dev
-description: "Application caching architecture — Next.js 15 cache layers (Request Memoization, Data Cache, Full Route Cache, Router Cache), Redis patterns, tag-based invalidation, CDN interaction, cache key design"
+description: "Use when adding caching layers, configuring Redis, tuning Next.js cache, or fixing stale data issues. Triggers on: 'cache', 'Redis', 'caching', 'stale', 'revalidate', 'CDN cache', '캐시', '캐싱', '느려', 'invalidation', 'memoization'."
 user-invocable: true
 allowed-tools:
   - Read

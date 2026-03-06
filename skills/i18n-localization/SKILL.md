@@ -1,7 +1,7 @@
 ---
 name: i18n-localization
 category: dev
-description: "Internationalization architecture — next-intl App Router integration, ICU MessageFormat, Server Component translation, RTL layout support, Intl API formatting, locale negotiation middleware"
+description: "Use when adding multi-language support, setting up next-intl, translating UI text, or handling locale routing. Triggers on: 'i18n', 'internationalization', 'localization', 'translation', 'next-intl', 'locale', '다국어', '번역', '언어 변경', 'RTL'."
 user-invocable: true
 allowed-tools:
   - Read

@@ -1,7 +1,7 @@
 ---
 name: multi-tenant
 category: architecture
-description: "Multi-tenant SaaS isolation patterns — row-level security (RLS), schema-per-tenant, tenant context propagation, cache namespacing, and cross-tenant data leak prevention"
+description: "Use when building multi-tenant SaaS, implementing tenant isolation, setting up RLS, or preventing cross-tenant data leaks. Triggers on: 'multi-tenant', 'tenant', 'SaaS isolation', 'RLS', 'row-level security', '멀티테넌트', '테넌트', 'organization', 'workspace', '팀 분리'."
 user-invocable: true
 allowed-tools:
   - Read

@@ -1,7 +1,7 @@
 ---
 name: email-delivery
 category: dev
-description: "Transactional email architecture — SPF/DKIM/DMARC domain authentication, bounce handling, queue separation, React Email/MJML templates, deliverability optimization"
+description: "Use when sending transactional emails, setting up email templates, configuring SPF/DKIM, or fixing deliverability issues. Triggers on: 'email', 'send email', 'Resend', 'SendGrid', 'SMTP', '이메일', '메일 발송', 'template', 'bounce', 'React Email'."
 user-invocable: true
 allowed-tools:
   - Read

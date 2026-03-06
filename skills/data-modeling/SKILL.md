@@ -1,7 +1,7 @@
 ---
 name: data-modeling
 category: data
-description: "Data modeling for analytics — dimensional modeling, star/snowflake schemas, slowly changing dimensions, and dbt model layers"
+description: "Use when designing data warehouse schemas, building dbt models, implementing dimensional modeling, or handling slowly changing dimensions. Triggers on: 'data modeling', 'data warehouse', 'dbt', 'star schema', 'dimension', 'fact table', '데이터 모델링', '웨어하우스', 'SCD', 'analytics'."
 user-invocable: true
 allowed-tools:
   - Read
@@ -164,6 +164,49 @@ dbt 모델 레이어링(staging/intermediate/marts)과 데이터 계약 관리 �
 
 ### dbt 모델 계보
 (staging → intermediate → marts 흐름)
+```
+
+## Advanced dbt Patterns
+
+### Slim CI (`state:modified+` + `--defer`)
+```bash
+# PR에서 변경된 모델 + 다운스트림만 실행 (full run 대비 90%+ 시간 절감)
+dbt build --select "state:modified+" --defer --state ./prod-artifacts/ --target ci
+# prod-artifacts/manifest.json을 S3/GCS에 저장하고 CI가 다운로드하는 패턴이 표준
+```
+
+### dbt Unit Tests (v1.8+)
+```yaml
+models:
+  - name: stg_stripe__payments
+    unit_tests:
+      - name: test_cents_to_dollars_conversion
+        given:
+          - input: ref('payments')
+            rows: [{ id: "pay_1", amount: 1000, status: "succeeded" }]
+        expect:
+          rows: [{ payment_id: "pay_1", amount_dollars: 10.00 }]
+# 실제 DW 데이터 없이 순수 SQL 변환 로직을 단위 검증
+```
+
+### Elementary 품질 모니터링
+```yaml
+# packages.yml
+packages:
+  - package: elementary-data/elementary
+    version: [">=0.14.0", "<1.0.0"]
+```
+```bash
+dbt run --select elementary && edr report  # HTML 품질 리포트
+```
+- row count 급감, null 비율 급증, freshness 지연, 분포 이탈 등 이상치 탐지(Anomaly Detection)
+
+### `generate_schema_name` 매크로 (환경별 스키마 분리)
+```sql
+{% macro generate_schema_name(custom_schema_name, node) %}
+  {% if target.name == 'prod' %}{{ custom_schema_name | trim }}
+  {% else %}{{ default__generate_schema_name(custom_schema_name, node) }}{% endif %}
+{% endmacro %}
 ```
 
 ## 안티패턴

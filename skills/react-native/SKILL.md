@@ -1,7 +1,7 @@
 ---
 name: react-native
 category: mobile
-description: "React Native cross-platform development — Expo workflow, navigation patterns, native modules, and platform-specific optimization"
+description: "Use when building mobile apps with React Native, setting up Expo, configuring navigation, or writing native modules. Triggers on: 'React Native', 'Expo', 'mobile app', 'iOS', 'Android', '앱 개발', '모바일', 'navigation', 'native module', 'EAS'."
 user-invocable: true
 allowed-tools:
   - Read

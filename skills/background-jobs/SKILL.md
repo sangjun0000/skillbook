@@ -1,7 +1,7 @@
 ---
 name: background-jobs
 category: dev
-description: "Background job processing architecture — BullMQ/Inngest patterns, dead letter queues, graceful shutdown, worker concurrency, rate limiting, and job scheduling"
+description: "Use when implementing background tasks, job queues, scheduled jobs, or async processing with BullMQ/Inngest. Triggers on: 'background job', 'queue', 'BullMQ', 'Inngest', 'worker', 'cron', 'scheduled task', '백그라운드', '큐', '비동기 작업', 'job processing'."
 user-invocable: true
 allowed-tools:
   - Read

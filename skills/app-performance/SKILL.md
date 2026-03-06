@@ -1,7 +1,7 @@
 ---
 name: app-performance
 category: mobile
-description: "Mobile app performance — rendering optimization, memory management, network efficiency, startup time, and profiling tools"
+description: "Use when fixing slow app rendering, reducing startup time, optimizing memory usage, or profiling mobile performance. Triggers on: 'app slow', 'rendering', 'FPS', 'memory leak', 'startup time', 'profiling', '앱 느려', '버벅', '메모리', 'jank', 'performance'."
 user-invocable: true
 allowed-tools:
   - Read

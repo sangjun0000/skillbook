@@ -1,7 +1,7 @@
 ---
 name: terms-of-service
 category: legal
-description: "SaaS terms of service and privacy policy drafting — mandatory clauses by jurisdiction, consumer protection compliance, auto-renewal disclosure, refund policy design, and COPPA/youth protection requirements"
+description: "Use when drafting terms of service, privacy policies, refund policies, or legal pages for a SaaS product. Triggers on: 'terms of service', 'ToS', 'privacy policy', 'refund policy', '이용약관', '개인정보', '환불', 'legal page', 'EULA', '약관'."
 user-invocable: true
 allowed-tools:
   - Read

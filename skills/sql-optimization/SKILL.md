@@ -1,7 +1,7 @@
 ---
 name: sql-optimization
 category: data
-description: "Advanced SQL optimization — query execution plans, index strategy, window functions, CTEs, and PostgreSQL performance tuning"
+description: "Use when writing complex queries, fixing slow SQL, adding indexes, or tuning PostgreSQL performance. Triggers on: 'query', 'SQL', 'slow query', 'index', 'PostgreSQL', 'JOIN', 'EXPLAIN', 'CTE', 'window function', '쿼리', '느려', '인덱스'."
 user-invocable: true
 allowed-tools:
   - Read

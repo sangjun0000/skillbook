@@ -1,7 +1,7 @@
 ---
 name: payment-billing
 category: business
-description: "Stripe subscription state machine, webhook idempotency, proration logic, dunning recovery, PCI scope minimization, and billing system architecture"
+description: "Use when implementing payments, subscriptions, Stripe integration, or pricing pages. Triggers on: 'payment', 'billing', 'subscription', 'Stripe', 'webhook', '결제', '구독', '가격', 'pricing', '유료화', '정기결제'."
 user-invocable: true
 allowed-tools:
   - Read

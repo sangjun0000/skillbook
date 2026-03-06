@@ -1,7 +1,7 @@
 ---
 name: accessibility
 category: design
-description: "Web accessibility (a11y) — WCAG 2.2 compliance, screen reader optimization, keyboard navigation, ARIA patterns, and automated testing"
+description: "Use when adding screen reader support, fixing keyboard navigation, implementing ARIA patterns, or meeting WCAG compliance. Triggers on: 'accessibility', 'a11y', 'WCAG', 'screen reader', 'ARIA', 'keyboard navigation', '접근성', '장애인', 'alt text', 'focus'."
 user-invocable: true
 allowed-tools:
   - Read

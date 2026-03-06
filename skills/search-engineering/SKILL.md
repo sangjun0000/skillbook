@@ -1,7 +1,7 @@
 ---
 name: search-engineering
 category: data
-description: "Search system architecture — Elasticsearch/Typesense setup, Korean nori analyzer, relevance tuning (BM25/boosting), faceted search, autocomplete, and indexing strategies"
+description: "Use when building search features, setting up Elasticsearch/Typesense, implementing autocomplete, or tuning search relevance. Triggers on: 'search', 'Elasticsearch', 'Typesense', 'autocomplete', 'full-text search', '검색', '검색 기능', 'facet', 'fuzzy', '자동완성'."
 user-invocable: true
 allowed-tools:
   - Read

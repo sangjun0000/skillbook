@@ -1,7 +1,7 @@
 ---
 name: web-visual-design
 category: dev
-description: "Web visual design system — typography scales, color theory, spacing rhythm, layout composition, and WCAG accessibility"
+description: "Use when designing page layouts, choosing colors/fonts, building landing pages, or making UI look professional. Triggers on: 'design', 'typography', 'color', 'layout', 'landing page', 'visual', '디자인', '색상', '폰트', '이쁘게', '예쁘게', 'spacing'."
 user-invocable: true
 allowed-tools:
   - Read
@@ -137,6 +137,59 @@ Tailwind CSS와 CSS Custom Properties를 활용한 디자인 시스템 구축 �
 
 ### 적용 코드
 (Tailwind 클래스 또는 CSS 코드)
+```
+
+## Advanced Component Patterns
+
+### Tailwind v4 `@theme` 블록
+```css
+/* tailwind.config.ts 없이 CSS에서 직접 토큰 → 유틸리티 바인딩 */
+@import "tailwindcss";
+@theme {
+  --color-surface: #f9fafb;
+  --color-accent: #2563eb;
+  /* bg-surface, text-accent 등 자동 생성 */
+}
+@media (prefers-color-scheme: dark) {
+  @theme { --color-surface: #111827; --color-accent: #3b82f6; }
+}
+```
+
+### `Slot`/`asChild` 컴포넌트 합성
+```tsx
+import { Slot } from '@radix-ui/react-slot';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
+}
+export function Button({ asChild, className, ...props }: ButtonProps) {
+  const Comp = asChild ? Slot : 'button';
+  return <Comp className={cn(buttonVariants(), className)} {...props} />;
+}
+// <Button asChild><Link href="/dash">Go</Link></Button> → <a> 렌더링 + Button 스타일
+```
+
+### 3-way Dark Mode Sync
+```tsx
+export function useDarkMode() {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem('theme');
+    return stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) setIsDark(e.matches);
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return { isDark, toggle: () => setIsDark(d => !d) };
+}
 ```
 
 ## 안티패턴
